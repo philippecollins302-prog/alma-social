@@ -11,8 +11,8 @@
 #                                  ~/.config/clever-cloud/clever-tools.json)
 #   SOCIAL_CODE_PDG              — le code de connexion du PDG (8 chiffres)
 # Et, facultative, une VARIABLE (onglet « Variables ») :
-#   CLEVER_ORG                   — l'organisation Clever (orga_…), si le compte
-#                                  en a plusieurs
+#   CLEVER_ORG                   — l'organisation Clever (orga_…), pour en
+#                                  viser une autre que « GROUP ALMA »
 #
 # Aucune valeur n'est jamais imprimée : la clé de chiffrement est fabriquée
 # sur place, masquée, et posée directement chez Clever.
@@ -86,6 +86,9 @@ jobs:
         id: orga
         env:
           ORG_CHOISIE: ${{ vars.CLEVER_ORG }}
+          # Le compte a deux organisations (GROUP ALMA et VAPI LMS) : ALMA
+          # SOCIAL publie pour le groupe, il vit chez le groupe.
+          ORG_NOM: GROUP ALMA
         run: |
           clever curl "$API/summary" > /tmp/summary.json
           jq -e '.user.id' /tmp/summary.json > /dev/null || {
@@ -100,8 +103,10 @@ jobs:
               org=$(jq -r '.organisations[] | select(.id | startswith("orga_")) | .id' /tmp/summary.json)
             elif [ "$n" = "0" ]; then
               org=$(jq -r '.user.id' /tmp/summary.json)
+            elif org=$(jq -er --arg n "$ORG_NOM" '[.organisations[] | select(.name == $n) | .id] | if length == 1 then .[0] else empty end' /tmp/summary.json); then
+              echo "plusieurs organisations : on prend « $ORG_NOM »"
             else
-              echo "❌ plusieurs organisations : posez la variable CLEVER_ORG avec l'une d'elles."
+              echo "❌ plusieurs organisations, et aucune ne s'appelle « $ORG_NOM » : posez la variable CLEVER_ORG avec l'une d'elles."
               jq -r '.organisations[] | select(.id | startswith("orga_")) | "   \(.id)  \(.name)"' /tmp/summary.json
               exit 1
             fi
