@@ -1,0 +1,171 @@
+[
+ {
+  "cle": "ouverture-sazu-2026",
+  "nom": "Ouverture SAZÚ — 27 novembre 2026",
+  "marques": [
+   "sazu"
+  ],
+  "sorte": "ouverture",
+  "evenement": "2026-11-27T11:30:00+01:00",
+  "debut": "2026-10-30",
+  "fin": "2026-11-29",
+  "reseaux": [
+   "instagram",
+   "facebook",
+   "tiktok"
+  ],
+  "brief": "Quatre semaines de compte à rebours (plan de lancement du Drive) : le mystère d'abord, le logo le 13/11 à 18 h, les salsas, la carte, puis l'ouverture le vendredi 27/11 à 11 h 30.",
+  "etapes": [
+   {
+    "jour": "2026-10-30",
+    "heure": "18:00",
+    "etiquette": "J-28",
+    "accroche": "Boutonnet, ça va chauffer.",
+    "consigne": "Premier signe, avant même le mystère : une phrase et la date, 27.11. Ni plat, ni logo, ni nom de bowl, ni application.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-06",
+    "heure": "18:00",
+    "etiquette": "J-21",
+    "accroche": "Quelque chose se prépare à Boutonnet",
+    "consigne": "Le mystère commence : « Boutonnet, ça va chauffer. 27.11 ». On ne montre ni plat ni logo ; on invite à activer les notifications.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-10",
+    "heure": "18:00",
+    "etiquette": "J-17",
+    "accroche": "20 m²",
+    "pilier": "cuisine_ce_matin",
+    "consigne": "La cuisine de 20 m² : les mains, l'inox, la prise en main. Toujours pas de logo.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-12",
+    "heure": "18:00",
+    "etiquette": "J-15",
+    "accroche": "Ce qu'on peut déjà dire",
+    "consigne": "Ce qu'on peut déjà dire : des bowls latino chauds, cuisinés le matin à Boutonnet, à commander sur Uber Eats et Deliveroo à partir du 27 novembre. Demain à 18 h, le logo.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-13",
+    "heure": "18:00",
+    "etiquette": "J-14",
+    "accroche": "Deux feuilles, deux filles",
+    "consigne": "Révélation du logo : l'accent du Ú est remplacé par deux feuilles — deux feuilles, deux filles, Ariana et Lucie. Le logo apparaît pour la première fois.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-17",
+    "heure": "18:00",
+    "etiquette": "J-10",
+    "accroche": "Six salsas",
+    "pilier": "suave_fuego",
+    "consigne": "Les six salsas, de suave à fuego : Verde suave, Roja media, Chipotle ahumada, Mango-habanero afrutada, Ají amarillo picante, Fuego extrema. Une offerte par bowl. Jamais de défi.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-20",
+    "heure": "11:15",
+    "etiquette": "J-7",
+    "accroche": "La carta",
+    "consigne": "La carte : MÉXICO, SALVADOR, CARIBE, VERDE, et ce qu'il y a dedans. Ce soir à 18 h, le concours « Six salsas, six mois » ouvre, jusqu'au 26 à 23 h 59.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-24",
+    "heure": "11:15",
+    "etiquette": "J-3",
+    "accroche": "CARIBE",
+    "consigne": "Le CARIBE : crevettes pochées sauce coco, riz parfumé, légumes vapeur, tostones.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-26",
+    "heure": "11:15",
+    "etiquette": "J-1",
+    "accroche": "Comment commander",
+    "pilier": "sur_lapp",
+    "consigne": "Comment commander : ouvrir Uber Eats ou Deliveroo, chercher SAZÚ, choisir son bowl et sa salsa — ou commander dans l'app et récupérer son sac à la porte. Live Instagram ce soir à 19 h. Ouverture demain à 11 h 30.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok"
+    ]
+   },
+   {
+    "jour": "2026-11-27",
+    "heure": "11:30",
+    "etiquette": "Jour J",
+    "accroche": "C'est ouvert",
+    "consigne": "C'est ouvert, aujourd'hui à 11 h 30 : l'appel à commander le plus direct possible. Accroche possible : « Ici, le seul truc noir, ce sont les haricots. »",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok",
+     "gbp"
+    ]
+   },
+   {
+    "jour": "2026-11-28",
+    "heure": "11:15",
+    "etiquette": "J+1",
+    "accroche": "Jour 1 en 30 secondes",
+    "consigne": "Le premier jour en 30 secondes : les premiers sacs qui partent, les premières réactions. Merci, sans en rajouter.",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok",
+     "gbp"
+    ]
+   },
+   {
+    "jour": "2026-11-29",
+    "heure": "18:00",
+    "etiquette": "J+2",
+    "accroche": "Premier week-end",
+    "consigne": "Le premier week-end : ce qui a plu, et les horaires (fermé le lundi).",
+    "reseaux": [
+     "instagram",
+     "facebook",
+     "tiktok",
+     "gbp"
+    ]
+   }
+  ]
+ }
+]

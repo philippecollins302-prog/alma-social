@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1C2B3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ALMA SOCIAL">
+<title>ALMA SOCIAL</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/static/icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icone-192.png">
+<link rel="stylesheet" href="/static/app.css?v=2">
+</head>
+<body>
+<!-- La porte : un code personnel, rien d'autre. -->
+<section id="porte" hidden>
+  <div class="porte">
+    <h1>ALMA SOCIAL</h1>
+    <p class="doux">Votre code personnel</p>
+    <form id="f-porte" autocomplete="off">
+      <input id="code" type="password" inputmode="numeric" autocomplete="current-password" required
+             minlength="6" placeholder="••••••" aria-label="Code personnel">
+      <button class="gros">Entrer</button>
+    </form>
+    <p id="porte-erreur" class="erreur" role="alert"></p>
+  </div>
+</section>
+
+<section id="appli" hidden>
+  <header class="haut">
+    <strong>ALMA SOCIAL</strong>
+    <span id="bandeau" class="bandeau"></span>
+  </header>
+
+  <!-- 1. Déposer : la photo, puis la marque. Deux gestes. -->
+  <main id="v-deposer" class="vue">
+    <label class="choisir" id="choisir">
+      <input id="fichiers" type="file" accept="image/*" multiple hidden>
+      <span class="grand-emoji" aria-hidden="true">📷</span>
+      <span id="choisir-texte">Prendre ou choisir des photos</span>
+    </label>
+    <div id="apercus" class="apercus"></div>
+    <p id="consigne" class="consigne">Puis touchez la marque :</p>
+    <div id="marques" class="marques"></div>
+    <div id="envois" class="envois" aria-live="polite"></div>
+  </main>
+
+  <!-- 2. Mes photos : ce qu'elles sont devenues. -->
+  <main id="v-photos" class="vue" hidden>
+    <div class="filtres" id="filtre-photos"></div>
+    <div id="liste-photos"></div>
+  </main>
+
+  <!-- 3. Résultats : les clients d'abord. -->
+  <main id="v-resultats" class="vue" hidden>
+    <div id="a-traiter"></div>
+    <div id="tableau"></div>
+  </main>
+
+  <!-- 4. Agenda : le mois, les rendez-vous, les campagnes. -->
+  <main id="v-agenda" class="vue" hidden>
+    <div class="filtres" id="filtre-agenda"></div>
+    <div id="agenda"></div>
+  </main>
+
+  <!-- 5. Réglages : l'arrêt, les pauses, les comptes, la santé, le journal. -->
+  <main id="v-reglages" class="vue" hidden>
+    <div id="reglages"></div>
+  </main>
+
+  <nav class="onglets" role="tablist">
+    <button data-vue="deposer" class="actif">📷<span>Déposer</span></button>
+    <button data-vue="photos">🖼️<span>Photos</span></button>
+    <button data-vue="resultats">📈<span>Résultats</span></button>
+    <button data-vue="agenda">📅<span>Agenda</span></button>
+    <button data-vue="reglages">⚙️<span>Réglages</span></button>
+  </nav>
+</section>
+
+<dialog id="dialogue"><div id="dialogue-corps"></div><form method="dialog"><button class="secondaire">Fermer</button></form></dialog>
+
+<script src="/static/js/attente.js?v=2"></script>
+<script src="/static/js/app.js?v=2"></script>
+</body>
+</html>

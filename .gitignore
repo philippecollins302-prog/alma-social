@@ -1,0 +1,23 @@
+# ALMA SOCIAL — ce qui ne va jamais dans le dépôt.
+
+# Les secrets. Le fichier d'exemple, lui, DOIT être suivi : il ne porte que des noms.
+.env
+.env.*
+!.env.example
+
+# La base de développement, les photos déposées, leurs déclinaisons.
+donnees/
+fichiers/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Python.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Ce que les outils écrivent en tournant.
+*.log

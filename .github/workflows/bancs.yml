@@ -1,0 +1,52 @@
+# ═══ ALMA SOCIAL — les bancs, sur chaque poussée et chaque pull request ═══
+#
+# Un seul verdict, et il bloque : `bancs/tous.sh` s'arrête au premier rouge.
+# Cette chaîne NE DÉPLOIE RIEN : la mise en ligne chez l'hébergeur se décide
+# avec Philippe (README.md, « Mettre en ligne »).
+#
+# Versions des actions : le premier majeur qui tourne sur Node 24
+# (checkout v5, setup-python v6), lu dans le `using:` de chaque `action.yml`.
+name: bancs
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tous-les-bancs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          # La version de la production (CC_PYTHON_VERSION=3.13, voir README.md).
+          python-version: "3.13"
+
+      - name: Dépendances
+        run: pip install -r requirements.txt
+
+      # `pipefail` : sans lui, `tee` rend 0 et un banc rouge passerait pour vert.
+      - name: Tous les bancs, et un verdict
+        run: |
+          set -o pipefail
+          PYTHON=python sh bancs/tous.sh 2>&1 | tee /tmp/bancs.txt
+
+      - name: Le verdict, en haut du run
+        if: always()
+        run: |
+          [ -f /tmp/bancs.txt ] || exit 0
+          {
+            if grep -q '^✅ .* bancs verts' /tmp/bancs.txt; then
+              echo "## ✅ ALMA SOCIAL : $(grep -c 'contrôles verts, 0 rouges' /tmp/bancs.txt) bancs verts"
+            else
+              echo "## 🔴 ALMA SOCIAL : banc rouge"
+              echo '```'
+              grep -E '❌|ROUGE' /tmp/bancs.txt | head -40
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

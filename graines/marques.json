@@ -1,0 +1,1288 @@
+[
+ {
+  "id": "alma",
+  "name": "Groupe Alma",
+  "activity": "Groupe de sociétés complémentaires du bâtiment — services techniques, maintenance, travaux, multiservices : VIP Plus, REGA Construction, La Maison des Services.",
+  "zone": "Montpellier et Castelnau-le-Lez, Marseille, PACA, Toulouse, Perpignan",
+  "audience": "Syndics, promoteurs, maîtres d'œuvre, bailleurs, entreprises, assureurs, grands comptes ; candidats.",
+  "sector": "b2b",
+  "kit": {
+   "colors": [
+    {
+     "name": "Bleu nuit",
+     "hex": "#1C2B3A"
+    },
+    {
+     "name": "Or",
+     "hex": "#C9A227"
+    },
+    {
+     "name": "Ivoire",
+     "hex": "#F6F3EC"
+    }
+   ],
+   "roles": {
+    "primaire": "Bleu nuit",
+    "fond": "Ivoire",
+    "accent": "Or",
+    "encre": "Bleu nuit"
+   },
+   "fonts": {
+    "title": "Poppins-SemiBold",
+    "text": "Inter",
+    "detail": "Inter"
+   },
+   "logo": null,
+   "logo_texte": true,
+   "logo_corner": "bas_droite",
+   "watermark": "",
+   "band": true,
+   "band_text": "Groupe Alma",
+   "frame": false,
+   "retouche": "complete"
+  },
+  "voice": {
+   "tone": "Institutionnel, posé et ambitieux : un groupe structuré, solide, complémentaire. On parle vision, croissance, maillage et grands comptes — jamais d'un dépannage ou d'un devis isolé.",
+   "address": "vous",
+   "emojis": false,
+   "emoji_set": [],
+   "vocabulary": [
+    "groupe",
+    "complémentarité",
+    "maillage",
+    "grands comptes",
+    "toute la chaîne",
+    "structuré"
+   ],
+   "forbidden": [
+    "dépannage pas cher"
+   ],
+   "allowed_promises": [],
+   "forbidden_promises": [
+    "\\d+ ?m(illions)? ?(d')?€",
+    "chiffre d'affaires"
+   ],
+   "cta": [
+    "Échangeons sur vos projets",
+    "Découvrez le groupe"
+   ],
+   "hashtags": [
+    "immobilier",
+    "BTP",
+    "Montpellier",
+    "Marseille",
+    "groupe"
+   ],
+   "legal_mentions": [],
+   "target_length": "moyen",
+   "notes": "Le groupe parle au niveau global ; la société leader métier parle au niveau opérationnel. L'objectif de chiffre d'affaires du groupe n'est jamais publié."
+  },
+  "pillars": [
+   {
+    "key": "vision",
+    "label": "Vision et croissance",
+    "description": "stratégie, ambition, développement régional",
+    "photo": "la direction, une réunion, le siège",
+    "share": 0
+   },
+   {
+    "key": "complementarite",
+    "label": "Complémentarité des sociétés",
+    "description": "comment VIP Plus, REGA et La Maison des Services se complètent",
+    "photo": "des équipes de plusieurs sociétés du groupe ensemble",
+    "share": 0
+   },
+   {
+    "key": "maillage",
+    "label": "Maillage territorial",
+    "description": "Montpellier, Marseille, Toulouse, Perpignan",
+    "photo": "une agence, une ville, un chantier en région",
+    "share": 0
+   },
+   {
+    "key": "references",
+    "label": "Références et réussites",
+    "description": "les références majeures du groupe",
+    "photo": "un chantier livré, une référence",
+    "share": 0
+   },
+   {
+    "key": "grands_comptes",
+    "label": "Grands comptes et partenaires",
+    "description": "assureurs, administrateurs, multisites",
+    "photo": "une signature, un partenaire, une visite",
+    "share": 0
+   },
+   {
+    "key": "presse_evenements",
+    "label": "Presse et événements",
+    "description": "prises de parole, salons, événements",
+    "photo": "un événement, un salon, une prise de parole",
+    "share": 0
+   }
+  ],
+  "facts": {
+   "societes": "VIP Plus, REGA Construction, La Maison des Services",
+   "villes": "Montpellier, Marseille, Toulouse, Perpignan"
+  },
+  "products": [],
+  "links": {
+   "site": null,
+   "adresse": "430 avenue Blaise Pascal, 34170 Castelnau-le-Lez",
+   "adresse_publique": null
+  },
+  "faq": [],
+  "cadence_min": 3,
+  "cadence_max": 4,
+  "active_platforms": [
+   "linkedin",
+   "linkedin_perso",
+   "facebook"
+  ],
+  "todo": [
+   "Charte du groupe : logo, couleurs, polices (rien dans le Drive — valeurs provisoires)",
+   "Site du groupe",
+   "Profil LinkedIn personnel : celui de qui ?"
+  ],
+  "_concurrents": []
+ },
+ {
+  "id": "rega",
+  "name": "REGA Construction",
+  "activity": "Entreprise générale du bâtiment tous corps d'état : construction, rénovation, réhabilitation, remise en état après sinistre — un seul interlocuteur qui coordonne le chantier de A à Z.",
+  "zone": "Occitanie et PACA — siège à Castelnau-le-Lez (Hérault), chantiers jusqu'à Marseille",
+  "audience": "Particuliers, copropriétés, professionnels, investisseurs ; promoteurs, bailleurs sociaux, collectivités, syndics, assureurs.",
+  "sector": "btp",
+  "kit": {
+   "colors": [
+    {
+     "name": "Rouge",
+     "hex": "#EC1D25"
+    },
+    {
+     "name": "Sauge",
+     "hex": "#A7CBBF"
+    },
+    {
+     "name": "Anthracite",
+     "hex": "#292929"
+    },
+    {
+     "name": "Rouge sombre",
+     "hex": "#BB0307"
+    },
+    {
+     "name": "Rouge documents",
+     "hex": "#CC1F1F"
+    },
+    {
+     "name": "Noir",
+     "hex": "#1A1A1A"
+    }
+   ],
+   "roles": {
+    "primaire": "Anthracite",
+    "fond": "Sauge",
+    "accent": "Rouge",
+    "encre": "Noir"
+   },
+   "fonts": {
+    "title": "Poppins-SemiBold",
+    "text": "Inter",
+    "detail": "Poppins-Regular"
+   },
+   "logo": "logos/rega.png",
+   "logo_corner": "bas_droite",
+   "watermark": "",
+   "band": true,
+   "band_text": "Un seul appel suffit. On gère le reste.",
+   "frame": false,
+   "retouche": "complete"
+  },
+  "voice": {
+   "tone": "Professionnel, direct et rassurant : qualité, délais, exigence. Une entreprise solide, rigoureuse, organisée.",
+   "address": "vous",
+   "emojis": false,
+   "emoji_set": [],
+   "vocabulary": [
+    "un seul interlocuteur",
+    "tous corps d'état",
+    "de A à Z",
+    "devis clair",
+    "délais tenus",
+    "artisans qualifiés",
+    "remise en état après sinistre",
+    "chantier"
+   ],
+   "forbidden": [
+    "Qualibat",
+    "low cost",
+    "pas cher"
+   ],
+   "allowed_promises": [
+    "Devis gratuit, réponse sous 48 h, déplacement sur site offert"
+   ],
+   "forbidden_promises": [
+    "certifi[ée]e?s? rge",
+    "label rge",
+    "garanti[e]? sans retard"
+   ],
+   "cta": [
+    "Demandez votre devis gratuit : réponse sous 48 h",
+    "Un projet ? Un seul appel suffit"
+   ],
+   "hashtags": [
+    "BTP",
+    "renovation",
+    "construction",
+    "Marseille",
+    "Montpellier",
+    "Herault",
+    "rehabilitation"
+   ],
+   "legal_mentions": [],
+   "target_length": "moyen",
+   "notes": "Les certifications RGE et Qualibat sont celles du réseau d'artisans, pas de REGA : ne jamais écrire que REGA est certifiée. Aides (MaPrimeRénov', CEE, éco-PTZ) : « nous vous accompagnons », jamais « vous y avez droit ». Slogan : « Un seul appel suffit. On gère le reste. »"
+  },
+  "pillars": [
+   {
+    "key": "gros_oeuvre",
+    "label": "Gros œuvre",
+    "description": "fondations, murs porteurs, dalles, ouvertures, extensions",
+    "photo": "un chantier de gros œuvre : maçonnerie, dalle, ouverture",
+    "share": 0
+   },
+   {
+    "key": "structure",
+    "label": "Structure et enveloppe",
+    "description": "charpente, couverture, façades, isolation",
+    "photo": "une toiture, une façade, une isolation en cours",
+    "share": 0
+   },
+   {
+    "key": "second_oeuvre",
+    "label": "Second œuvre",
+    "description": "plomberie, électricité, chauffage, ventilation",
+    "photo": "un tableau électrique, une installation de chauffage ou de plomberie",
+    "share": 0
+   },
+   {
+    "key": "menuiserie",
+    "label": "Menuiserie",
+    "description": "fenêtres, portes, baies vitrées, agencements",
+    "photo": "une fenêtre, une baie ou un agencement posé",
+    "share": 0
+   },
+   {
+    "key": "amenagement",
+    "label": "Aménagement intérieur",
+    "description": "plâtrerie, peinture, sols, salles de bains et cuisines",
+    "photo": "une pièce finie : salle de bains, cuisine, peinture",
+    "share": 0
+   },
+   {
+    "key": "renovation",
+    "label": "Rénovation et réhabilitation",
+    "description": "appartements, maisons, immeubles, remise en état après sinistre",
+    "photo": "un avant / après de rénovation",
+    "share": 0
+   },
+   {
+    "key": "gestion_projet",
+    "label": "Gestion de projet",
+    "description": "pilotage, coordination, suivi, réception, levée des réserves",
+    "photo": "l'équipe sur un chantier, une réunion de chantier, une réception",
+    "share": 0
+   }
+  ],
+  "facts": {
+   "devis": "Devis gratuit, réponse sous 48 h, déplacement sur site offert",
+   "reference_24_logements": "Réhabilitation complète d'un immeuble de 24 logements (R+4, occupé) à Marseille pour un bailleur social : 7 mois de chantier, classe énergétique de E à B",
+   "construction_neuve": "Immeubles collectifs de R+2 à R+8"
+  },
+  "products": [],
+  "links": {
+   "site": null,
+   "devis": null,
+   "telephone": "04 86 68 81 31",
+   "horaires": "du lundi au vendredi, 8 h–18 h",
+   "adresse": "430 avenue Blaise Pascal, 34170 Castelnau-le-Lez",
+   "adresse_publique": null
+  },
+  "faq": [
+   {
+    "topic": "devis",
+    "keywords": [
+     "devis",
+     "prix",
+     "tarif",
+     "combien",
+     "coût"
+    ],
+    "answer": "Le devis est gratuit, avec une réponse sous 48 h et un déplacement sur site offert. Écrivez-nous en message privé ou appelez-nous du lundi au vendredi, de 8 h à 18 h."
+   },
+   {
+    "topic": "sinistre",
+    "keywords": [
+     "sinistre",
+     "dégât des eaux",
+     "incendie",
+     "assurance"
+    ],
+    "answer": "Nous prenons en charge la remise en état après sinistre, de l'expertise à la livraison. Écrivez-nous en message privé avec les premières informations."
+   }
+  ],
+  "cadence_min": 3,
+  "cadence_max": 5,
+  "active_platforms": [
+   "linkedin",
+   "facebook",
+   "instagram",
+   "gbp",
+   "youtube",
+   "pinterest"
+  ],
+  "todo": [
+   "Zone mise en avant : Hérault ou Marseille ? (le Drive dit les deux)",
+   "Site propre (seule existe une fiche annuaire) et page de devis",
+   "Comptes réseaux et fiche Google Business à relier",
+   "Responsable de la marque : nom et e-mail"
+  ],
+  "_concurrents": []
+ },
+ {
+  "id": "vipplus",
+  "name": "VIP Plus",
+  "activity": "Serrurerie-métallerie, menuiseries et fermetures, automatismes et domotique, alarmes et sécurité, climatisation, ventilation, chauffage, plomberie, désenfumage, maintenance et dépannage — avec un bureau d'études intégré.",
+  "zone": "Occitanie — siège à Castelnau-le-Lez (Hérault) ; VIP Plus PACA",
+  "audience": "Syndics, gestionnaires, bailleurs, entreprises, maîtres d'œuvre, promoteurs, clients publics, particuliers.",
+  "sector": "btp",
+  "kit": {
+   "colors": [
+    {
+     "name": "Bleu acier",
+     "hex": "#1F3B57"
+    },
+    {
+     "name": "Rouge sécurité",
+     "hex": "#C62828"
+    },
+    {
+     "name": "Gris clair",
+     "hex": "#ECEFF1"
+    }
+   ],
+   "roles": {
+    "primaire": "Bleu acier",
+    "fond": "Gris clair",
+    "accent": "Rouge sécurité",
+    "encre": "Bleu acier"
+   },
+   "fonts": {
+    "title": "Montserrat",
+    "text": "Inter",
+    "detail": "Inter"
+   },
+   "logo": null,
+   "logo_texte": true,
+   "logo_corner": "bas_droite",
+   "watermark": "",
+   "band": true,
+   "band_text": "VIP Plus — étudier, concevoir, installer, maintenir",
+   "frame": false,
+   "retouche": "complete"
+  },
+  "voice": {
+   "tone": "Technique et expert, sans jargon gratuit : la société qui sait étudier, concevoir, fabriquer, installer, maintenir, sécuriser, intervenir.",
+   "address": "vous",
+   "emojis": false,
+   "emoji_set": [],
+   "vocabulary": [
+    "bureau d'études",
+    "sur mesure",
+    "de l'étude à l'entretien",
+    "maintenance",
+    "sécurité",
+    "accès"
+   ],
+   "forbidden": [
+    "pas cher",
+    "low cost"
+   ],
+   "allowed_promises": [],
+   "forbidden_promises": [],
+   "cta": [
+    "Parlez-nous de votre projet",
+    "Demandez une étude"
+   ],
+   "hashtags": [
+    "serrurerie",
+    "metallerie",
+    "automatisme",
+    "securite",
+    "maintenance",
+    "Montpellier"
+   ],
+   "legal_mentions": [],
+   "target_length": "moyen",
+   "notes": "Les chiffres du site (années d'expérience, effectif) ne sont pas confirmés : n'en écrire aucun."
+  },
+  "pillars": [
+   {
+    "key": "serrurerie",
+    "label": "Serrurerie-métallerie",
+    "description": "serrurerie, métallerie, accès",
+    "photo": "un portail, une grille, une serrure",
+    "share": 0
+   },
+   {
+    "key": "fermetures",
+    "label": "Menuiseries et fermetures",
+    "description": "menuiseries, fermetures, rideaux métalliques",
+    "photo": "une fermeture, un rideau métallique, une menuiserie",
+    "share": 0
+   },
+   {
+    "key": "automatismes",
+    "label": "Automatismes et domotique",
+    "description": "portails, barrières, domotique",
+    "photo": "un automatisme de portail ou de barrière",
+    "share": 0
+   },
+   {
+    "key": "securite",
+    "label": "Alarmes et sécurité",
+    "description": "alarmes, contrôle d'accès, sécurité",
+    "photo": "une alarme, un contrôle d'accès",
+    "share": 0
+   },
+   {
+    "key": "cvc",
+    "label": "Climatisation, chauffage, plomberie",
+    "description": "climatisation, ventilation, chauffage, plomberie, désenfumage",
+    "photo": "une installation de climatisation ou de ventilation",
+    "share": 0
+   },
+   {
+    "key": "maintenance",
+    "label": "Maintenance et dépannage",
+    "description": "contrats, interventions, dépannages",
+    "photo": "un technicien en intervention",
+    "share": 0
+   },
+   {
+    "key": "bureau_etudes",
+    "label": "Bureau d'études et sur mesure",
+    "description": "étude, conception, fabrication, pose",
+    "photo": "un plan, un atelier, une fabrication sur mesure",
+    "share": 0
+   }
+  ],
+  "facts": {},
+  "products": [],
+  "links": {
+   "site": null,
+   "adresse": "430 avenue Blaise Pascal, 34170 Castelnau-le-Lez",
+   "adresse_publique": null
+  },
+  "faq": [],
+  "cadence_min": 3,
+  "cadence_max": 4,
+  "active_platforms": [
+   "linkedin",
+   "facebook",
+   "instagram",
+   "gbp"
+  ],
+  "todo": [
+   "Charte VIP Plus : logo, couleurs, polices (rien dans le Drive — valeurs provisoires)",
+   "Années d'expérience et effectif à confirmer avant d'être écrits",
+   "Site, téléphone, comptes réseaux, fiche Google Business",
+   "Responsable de la marque : nom et e-mail"
+  ],
+  "_concurrents": []
+ },
+ {
+  "id": "lms",
+  "name": "LMS — La Maison des Sols",
+  "activity": "Pose de revêtements de sols, en neuf comme en rénovation : parquets, sols PVC, vinyles et LVT, moquettes et linoléum, préparation des supports, finitions.",
+  "zone": "Montpellier et sa région",
+  "audience": "Particuliers, bailleurs et syndics, entreprises, collectivités.",
+  "sector": "btp",
+  "kit": {
+   "colors": [
+    {
+     "name": "Navy",
+     "hex": "#09293F"
+    },
+    {
+     "name": "Orange",
+     "hex": "#F59D00"
+    },
+    {
+     "name": "Jaune",
+     "hex": "#F7D03F"
+    },
+    {
+     "name": "Or",
+     "hex": "#F0A020"
+    },
+    {
+     "name": "Crème",
+     "hex": "#F5F1EA"
+    }
+   ],
+   "roles": {
+    "primaire": "Navy",
+    "fond": "Crème",
+    "accent": "Orange",
+    "encre": "Navy"
+   },
+   "fonts": {
+    "title": "ArchivoBlack-Regular",
+    "text": "Montserrat",
+    "detail": "Montserrat"
+   },
+   "logo": "logos/lms.png",
+   "logo_corner": "bas_droite",
+   "watermark": "",
+   "band": true,
+   "band_text": "L'EXCELLENCE AU SOL",
+   "frame": false,
+   "retouche": "complete"
+  },
+  "voice": {
+   "tone": "Haut de gamme, sobre et précis : l'excellence au service de vos espaces. La méthode et la rigueur plutôt que le prix.",
+   "address": "vous",
+   "emojis": false,
+   "emoji_set": [],
+   "vocabulary": [
+    "pose experte",
+    "préparation des supports",
+    "finitions",
+    "résultat durable",
+    "matériaux de qualité",
+    "méthode",
+    "sur rendez-vous"
+   ],
+   "forbidden": [
+    "pas cher",
+    "promo",
+    "prix cassé",
+    "discount",
+    "low cost"
+   ],
+   "allowed_promises": [],
+   "forbidden_promises": [
+    "\\d+ ?€",
+    "à partir de \\d+"
+   ],
+   "cta": [
+    "Demandez votre devis personnalisé",
+    "Sur rendez-vous : parlons de votre projet"
+   ],
+   "hashtags": [
+    "parquet",
+    "revetementdesol",
+    "renovation",
+    "Montpellier",
+    "LVT",
+    "solsouple"
+   ],
+   "legal_mentions": [],
+   "target_length": "moyen",
+   "notes": "Jamais de prix : les tarifs sont sur devis personnalisé (la grille 2024 n'est pas confirmée). Sur rendez-vous uniquement. Slogan : « L'EXCELLENCE AU SOL »."
+  },
+  "pillars": [
+   {
+    "key": "parquets",
+    "label": "Parquets",
+    "description": "stratifié, contrecollé, massif ; pose flottante ou collée",
+    "photo": "un parquet posé, en lumière rasante",
+    "share": 0
+   },
+   {
+    "key": "sols_souples",
+    "label": "Sols PVC, vinyles et LVT",
+    "description": "dalles, lames ou lés ; logements, locaux, zones de passage",
+    "photo": "un sol PVC ou LVT posé",
+    "share": 0
+   },
+   {
+    "key": "moquettes",
+    "label": "Moquettes et linoléum",
+    "description": "confort acoustique et thermique ; chambres, bureaux",
+    "photo": "une moquette ou un linoléum posé",
+    "share": 0
+   },
+   {
+    "key": "preparation",
+    "label": "Préparation des supports",
+    "description": "dépose, ragréage, rattrapage de niveaux, barrière anti-humidité",
+    "photo": "un ragréage, une chape, une préparation de support",
+    "share": 0
+   },
+   {
+    "key": "finitions",
+    "label": "Finitions et accessoires",
+    "description": "plinthes, seuils, nez de marche, découpes précises",
+    "photo": "une plinthe, un seuil, un détail de finition",
+    "share": 0
+   },
+   {
+    "key": "marches_sdb",
+    "label": "Marches et salles de bains",
+    "description": "pose de marches, revêtements muraux, salles de bains",
+    "photo": "un escalier ou une salle de bains finie",
+    "share": 0
+   }
+  ],
+  "facts": {
+   "methode": "Une méthode en 5 étapes : analyse du projet, conseil, préparation des supports, pose, finitions et contrôle"
+  },
+  "products": [],
+  "links": {
+   "site": "https://lamaisondesservices.fr/",
+   "devis": null,
+   "telephone": "04 65 84 15 94",
+   "email": "devis@lamaisondesservices.fr",
+   "adresse": "Castelnau-le-Lez",
+   "adresse_publique": null
+  },
+  "faq": [
+   {
+    "topic": "prix",
+    "keywords": [
+     "prix",
+     "tarif",
+     "combien",
+     "m2",
+     "m²",
+     "devis"
+    ],
+    "answer": "Chaque chantier a son devis personnalisé : le support, la surface et le revêtement changent tout. Écrivez-nous en message privé pour prendre rendez-vous."
+   }
+  ],
+  "cadence_min": 3,
+  "cadence_max": 4,
+  "active_platforms": [
+   "instagram",
+   "facebook",
+   "pinterest",
+   "gbp",
+   "linkedin"
+  ],
+  "todo": [
+   "Adresse : 420 av. Blaise Pascal, 34057 ou 430, 34170 comme le reste du groupe ?",
+   "Comptes réseaux et fiche Google Business à relier",
+   "Responsable de la marque : nom et e-mail"
+  ],
+  "_concurrents": []
+ },
+ {
+  "id": "lms-paca",
+  "name": "LMS PACA — La Maison des Services",
+  "activity": "Multiservice pour les syndics de copropriété : un interlocuteur unique pour les besoins techniques des immeubles, du dépannage à la rénovation complète.",
+  "zone": "Marseille et la région PACA",
+  "audience": "Syndics et gestionnaires de copropriété ; bailleurs.",
+  "sector": "b2b",
+  "kit": {
+   "colors": [
+    {
+     "name": "Navy",
+     "hex": "#0F2D45"
+    },
+    {
+     "name": "Navy clair",
+     "hex": "#1A3D5C"
+    },
+    {
+     "name": "Or",
+     "hex": "#F0A020"
+    },
+    {
+     "name": "Crème",
+     "hex": "#F5F1EA"
+    },
+    {
+     "name": "Pierre",
+     "hex": "#DDD8CF"
+    }
+   ],
+   "roles": {
+    "primaire": "Navy",
+    "fond": "Crème",
+    "accent": "Or",
+    "encre": "Navy"
+   },
+   "fonts": {
+    "title": "PlayfairDisplay",
+    "text": "DMSans",
+    "detail": "JosefinSans"
+   },
+   "logo": "logos/lms-services.png",
+   "logo_corner": "bas_droite",
+   "watermark": "",
+   "band": true,
+   "band_text": "Un seul appel. Tout est géré.",
+   "frame": false,
+   "retouche": "complete"
+  },
+  "voice": {
+   "tone": "Professionnel, simple et rassurant, tourné vers les syndics : rapide, simple, rassurant, efficace.",
+   "address": "vous",
+   "emojis": false,
+   "emoji_set": [],
+   "vocabulary": [
+    "interlocuteur unique",
+    "un seul appel",
+    "rapport photo",
+    "astreinte",
+    "syndic",
+    "copropriété",
+    "intervention",
+    "transparence"
+   ],
+   "forbidden": [
+    "pas cher",
+    "low cost"
+   ],
+   "allowed_promises": [
+    "Urgence sous 4 h en zone couverte",
+    "Devis détaillé sous 48 h",
+    "Astreinte 24 h/24 et 7 j/7"
+   ],
+   "forbidden_promises": [
+    "intervention en \\d+ ?min",
+    "sous \\d+ ?min"
+   ],
+   "cta": [
+    "Un seul appel. Tout est géré.",
+    "Demandez votre devis détaillé : réponse sous 48 h"
+   ],
+   "hashtags": [
+    "syndic",
+    "copropriete",
+    "Marseille",
+    "PACA",
+    "maintenance",
+    "multiservice"
+   ],
+   "legal_mentions": [],
+   "target_length": "moyen",
+   "notes": "On parle aux syndics et aux gestionnaires : la preuve, c'est le rapport photo après chaque intervention. Slogan : « CENTRALISER – SIMPLIFIER – SÉCURISER »."
+  },
+  "pillars": [
+   {
+    "key": "plomberie",
+    "label": "Plomberie",
+    "description": "réseaux, fuites, sanitaires, urgences",
+    "photo": "une intervention de plomberie",
+    "share": 0
+   },
+   {
+    "key": "electricite",
+    "label": "Électricité",
+    "description": "dépannage, mise en conformité, rénovation des réseaux",
+    "photo": "un tableau électrique, une mise en conformité",
+    "share": 0
+   },
+   {
+    "key": "serrurerie",
+    "label": "Serrurerie",
+    "description": "ouverture de portes, serrures, sécurisation des accès",
+    "photo": "une porte, une serrure, un contrôle d'accès",
+    "share": 0
+   },
+   {
+    "key": "menuiserie",
+    "label": "Menuiserie intérieure et extérieure",
+    "description": "réparation, ajustement, sur mesure",
+    "photo": "une menuiserie réparée ou posée",
+    "share": 0
+   },
+   {
+    "key": "finitions",
+    "label": "Travaux de finition",
+    "description": "peinture, placo, revêtements muraux et sols",
+    "photo": "une cage d'escalier ou un hall repeint",
+    "share": 0
+   },
+   {
+    "key": "structure",
+    "label": "Travaux structurels",
+    "description": "petite maçonnerie, carrelage, rénovation d'espaces",
+    "photo": "un carrelage, une reprise de maçonnerie",
+    "share": 0
+   },
+   {
+    "key": "rapport_photo",
+    "label": "Le rapport photo",
+    "description": "demande, analyse, intervention, rapport avec photos",
+    "photo": "un technicien qui photographie son intervention, un avant / après",
+    "share": 0
+   }
+  ],
+  "facts": {
+   "experience": "Votre partenaire depuis 35 ans",
+   "urgence": "Urgence sous 4 h en zone couverte",
+   "devis": "Devis détaillé sous 48 h",
+   "astreinte": "Astreinte 24 h/24 et 7 j/7",
+   "assurance": "Garantie décennale MMA et responsabilité civile professionnelle",
+   "metiers": "6 métiers intégrés"
+  },
+  "products": [],
+  "links": {
+   "site": "https://lamaisondesservices.fr/",
+   "devis": null,
+   "telephone": "04 65 84 15 94",
+   "email": "devispaca@lamaisondesservices.fr",
+   "adresse": null,
+   "adresse_publique": null
+  },
+  "faq": [
+   {
+    "topic": "urgence",
+    "keywords": [
+     "urgence",
+     "urgent",
+     "fuite",
+     "panne",
+     "bloqué"
+    ],
+    "answer": "En zone couverte, une urgence est prise en charge sous 4 h, et l'astreinte répond 24 h/24 et 7 j/7. Appelez-nous directement."
+   },
+   {
+    "topic": "devis",
+    "keywords": [
+     "devis",
+     "prix",
+     "tarif",
+     "contrat"
+    ],
+    "answer": "Le devis détaillé arrive sous 48 h. Écrivez-nous en message privé avec l'adresse de l'immeuble."
+   }
+  ],
+  "cadence_min": 3,
+  "cadence_max": 4,
+  "active_platforms": [
+   "linkedin",
+   "facebook",
+   "gbp",
+   "instagram"
+  ],
+  "todo": [
+   "Le Drive dit « La Maison des Services » (multiservice syndics), pas « La Maison des Sols » : à confirmer",
+   "Perpignan : une zone de cette marque, ou une septième marque ?",
+   "« Depuis 35 ans » vient de la brochure : à confirmer",
+   "Comptes réseaux et fiche Google Business à relier",
+   "Responsable de la marque : nom et e-mail"
+  ],
+  "_concurrents": []
+ },
+ {
+  "id": "sazu",
+  "name": "SAZÚ",
+  "activity": "Dark kitchen de bowls latino chauds, cuisinés le matin dans une cuisine de 20 m² à Boutonnet ; vente uniquement sur Uber Eats et Deliveroo (retrait à la porte commandé dans l'app).",
+  "zone": "Montpellier, quartier Boutonnet",
+  "audience": "Étudiants de Boutonnet, soignants des hôpitaux voisins, habitants du quartier ; 18–35 ans.",
+  "sector": "food",
+  "kit": {
+   "colors": [
+    {
+     "name": "CREAM",
+     "hex": "#F3EAD3"
+    },
+    {
+     "name": "SAND",
+     "hex": "#E9DDBE"
+    },
+    {
+     "name": "OLIVE",
+     "hex": "#565E26"
+    },
+    {
+     "name": "OLIVE_DARK",
+     "hex": "#373D17"
+    },
+    {
+     "name": "OLIVE_MID",
+     "hex": "#7A8436"
+    },
+    {
+     "name": "SAGE",
+     "hex": "#B7C08A"
+    },
+    {
+     "name": "SAGE_PALE",
+     "hex": "#DCE1BF"
+    },
+    {
+     "name": "BUTTER",
+     "hex": "#F0D67E"
+    },
+    {
+     "name": "GUAYABA",
+     "hex": "#E9A2BD"
+    },
+    {
+     "name": "RASPBERRY",
+     "hex": "#8E2A4C"
+    },
+    {
+     "name": "INK",
+     "hex": "#2B2F12"
+    },
+    {
+     "name": "CANELA",
+     "hex": "#8A6440"
+    },
+    {
+     "name": "MUTED",
+     "hex": "#5E6240"
+    },
+    {
+     "name": "ALERTE",
+     "hex": "#A8434F"
+    }
+   ],
+   "roles": {
+    "primaire": "OLIVE",
+    "fond": "CREAM",
+    "accent": "RASPBERRY",
+    "encre": "INK"
+   },
+   "fonts": {
+    "title": "BagelFatOne-Regular",
+    "text": "Manrope",
+    "detail": "CourierPrime-Regular"
+   },
+   "logo": "logos/sazu.png",
+   "logo_from": "2026-11-13T18:00:00+01:00",
+   "logo_texte": false,
+   "logo_corner": "bas_droite",
+   "watermark": "",
+   "band": true,
+   "band_text": "Cherche SAZÚ sur Uber Eats ou Deliveroo",
+   "frame": false,
+   "retouche": "complete"
+  },
+  "voice": {
+   "tone": "Chaleureux, latino, joueur : des mots d'espagnol qui ont du goût dans des phrases en français. Calor, sazón, frescura, juego.",
+   "address": "tu",
+   "emojis": true,
+   "emoji_set": [
+    "🔥",
+    "🌶️",
+    "🥑",
+    "🌽",
+    "💚"
+   ],
+   "vocabulary": [
+    "chaud",
+    "cuisiné ce matin",
+    "sazón",
+    "suave",
+    "fuego",
+    "bowl",
+    "salsa",
+    "agua fresca",
+    "¡gracias!",
+    "¡buen provecho!"
+   ],
+   "forbidden": [
+    "restaurant",
+    "resto",
+    "sur place",
+    "salle",
+    "réservation",
+    "réserver",
+    "detox",
+    "détox",
+    "guilt-free",
+    "light",
+    "fait maison",
+    "bio",
+    "local",
+    "locaux",
+    "le plus piquant",
+    "défi",
+    "sans gluten"
+   ],
+   "allowed_promises": [],
+   "forbidden_promises": [
+    "livr[ée]e? en \\d+ ?min",
+    "livraison gratuite",
+    "le plus rapide",
+    "au lieu de",
+    "100 ?%"
+   ],
+   "cta": [
+    "Cherche SAZÚ sur Uber Eats ou Deliveroo"
+   ],
+   "hashtags": [
+    "montpellier",
+    "boutonnet",
+    "bowl",
+    "cuisinelatine",
+    "sazumontpellier"
+   ],
+   "legal_mentions": [],
+   "target_length": "court",
+   "rythme": {
+    "gbp": 1
+   },
+   "notes": "SAZÚ n'est pas un restaurant : une cuisine de livraison, seulement sur Uber Eats et Deliveroo. Pas de folklore (sombreros, cactus, moustaches, accent imité), pas de phrase entière en espagnol, pas de pique aux concurrents, jamais de défi piment : la Fuego se goûte, elle ne se relève pas. « Cuisiné ce matin » ne vaut que pour le chaud du jour ; salsas et desserts : « maison ». Le nom s'écrit SAZÚ, avec l'accent. Signature possible, pas à chaque fois : « ¡Ponle sazón! ». Allergènes : renvoyer à la fiche de chaque bowl dans Uber Eats ou Deliveroo."
+  },
+  "pillars": [
+   {
+    "key": "chaud_devant",
+    "label": "Chaud devant",
+    "description": "le bowl en gros plan, la vapeur, la texture",
+    "photo": "un bowl en gros plan, fumant",
+    "share": 30,
+    "reseaux_cles": [
+     "instagram",
+     "tiktok"
+    ]
+   },
+   {
+    "key": "cuisine_ce_matin",
+    "label": "Cuisiné ce matin",
+    "description": "la production du matin, les coulisses de la cuisine",
+    "photo": "la cuisine le matin : les mains, les marmites, la tinga qui mijote",
+    "share": 20
+   },
+   {
+    "key": "suave_fuego",
+    "label": "De suave à fuego",
+    "description": "les six salsas, en dégustation guidée",
+    "photo": "les salsas, une ou plusieurs, en gros plan",
+    "share": 15
+   },
+   {
+    "key": "un_bowl_un_pays",
+    "label": "Un bowl, un pays",
+    "description": "l'origine d'un bowl, un geste, un mot d'espagnol",
+    "photo": "un bowl et ses ingrédients",
+    "share": 15
+   },
+   {
+    "key": "vous_et_sazu",
+    "label": "Vous et SAZÚ",
+    "description": "les clients, les étudiants, les créateurs, leurs avis",
+    "photo": "un client, un sac qui part, une réaction",
+    "share": 10
+   },
+   {
+    "key": "sur_lapp",
+    "label": "Ça se passe sur l'app",
+    "description": "comment commander, les offres des apps vérifiées le jour même",
+    "photo": "un sac kraft prêt à partir, un téléphone sur l'app",
+    "share": 10
+   },
+   {
+    "key": "filles_de_sazu",
+    "label": "Les filles de SAZÚ",
+    "description": "Ariana et Lucie montent leur cuisine en 20 m² (série du lancement)",
+    "photo": "Ariana ou Lucie au travail",
+    "share": 0,
+    "hors_rotation": true
+   }
+  ],
+  "facts": {
+   "ouverture": "Ouverture le vendredi 27 novembre 2026 à 11 h 30",
+   "horaires": "Du mardi au dimanche, 11 h 30–14 h 30 et 18 h 30–22 h 30 ; fermé le lundi",
+   "cuisine": "Une cuisine de 20 m² à Boutonnet",
+   "salsas": "6 salsas maison, une offerte par bowl : Verde suave, Roja media, Chipotle ahumada, Mango-habanero afrutada, Ají amarillo picante, Fuego extrema",
+   "salvador": "Le bœuf du SALVADOR est effiloché 12 h",
+   "bowls": "4 bowls : MÉXICO, SALVADOR, CARIBE, VERDE"
+  },
+  "products": [
+   {
+    "nom": "MÉXICO",
+    "description": "Poulet tinga mijoté, riz coriandre-citron vert, haricots noirs, maïs, pico de gallo, totopos (le n° 1)",
+    "prix": {
+     "uber_eats": "14,50",
+     "deliveroo": "14,50"
+    },
+    "prix_verifie_le": null,
+    "allergenes": "aucun des 14 allergènes réglementaires"
+   },
+   {
+    "nom": "SALVADOR",
+    "description": "Bœuf effiloché 12 h, œuf, riz, purée de haricots noirs, laitue, curtido, guacamole (la signature)",
+    "prix": {
+     "uber_eats": "15,50",
+     "deliveroo": "15,50"
+    },
+    "prix_verifie_le": null,
+    "allergenes": "œufs"
+   },
+   {
+    "nom": "CARIBE",
+    "description": "Crevettes pochées sauce coco, riz parfumé, légumes vapeur, tostones",
+    "prix": {
+     "uber_eats": "16,50",
+     "deliveroo": "16,50"
+    },
+    "prix_verifie_le": null,
+    "allergenes": "crustacés"
+   },
+   {
+    "nom": "VERDE",
+    "description": "Patate douce rôtie, haricots noirs, avocat, plantain, pico, quinoa, mojo ail-herbes (végan)",
+    "prix": {
+     "uber_eats": "13,90",
+     "deliveroo": "13,90"
+    },
+    "prix_verifie_le": null,
+    "allergenes": "aucun"
+   }
+  ],
+  "links": {
+   "site": null,
+   "uber_eats": null,
+   "deliveroo": null,
+   "adresse": "22 rue du Faubourg Boutonnet, 34090 Montpellier",
+   "adresse_publique": null,
+   "horaires": "du mardi au dimanche, 11 h 30–14 h 30 et 18 h 30–22 h 30 ; fermé le lundi",
+   "jours_fermes": [
+    0
+   ],
+   "ouverture": "2026-11-27T11:30:00+01:00",
+   "calendrier_des": "2026-11-27"
+  },
+  "faq": [
+   {
+    "topic": "horaires",
+    "keywords": [
+     "heure",
+     "horaire",
+     "ouvert",
+     "ferm",
+     "quand"
+    ],
+    "answer": "On ouvre le vendredi 27 novembre à 11h30 ! Ensuite, du mardi au dimanche, 11h30–14h30 et 18h30–22h30. Le lundi, on se repose 💚"
+   },
+   {
+    "topic": "commander",
+    "keywords": [
+     "livr",
+     "uber",
+     "deliveroo",
+     "zone",
+     "commander",
+     "commande"
+    ],
+    "answer": "Cherche SAZÚ sur Uber Eats ou Deliveroo : l'app te dit si ton adresse est dans la zone. Tu peux aussi commander dans l'app et récupérer ton sac à la porte."
+   },
+   {
+    "topic": "sur_place",
+    "keywords": [
+     "sur place",
+     "manger là",
+     "venir manger",
+     "salle",
+     "table",
+     "réserv"
+    ],
+    "answer": "SAZÚ, c'est une cuisine de livraison : tes bowls arrivent chez toi via Uber Eats et Deliveroo, ou tu les récupères à la porte en commandant dans l'app."
+   },
+   {
+    "topic": "allergenes",
+    "keywords": [
+     "allerg",
+     "gluten",
+     "arachide",
+     "lactose",
+     "crustac"
+    ],
+    "answer": "Les allergènes de chaque bowl sont indiqués sur sa fiche, dans Uber Eats et Deliveroo. Un doute ? Écris-nous en message privé."
+   },
+   {
+    "topic": "vegan",
+    "keywords": [
+     "vegan",
+     "végan",
+     "végé",
+     "vege",
+     "viande"
+    ],
+    "answer": "Le VERDE est végan : patate douce rôtie, haricots noirs, avocat, plantain, pico, quinoa et mojo ail-herbes 🥑"
+   },
+   {
+    "topic": "piment",
+    "keywords": [
+     "piquant",
+     "piment",
+     "épicé",
+     "epice",
+     "fort"
+    ],
+    "answer": "Chaque bowl a sa salsa offerte, de suave à fuego : tu choisis ton niveau 🌶️"
+   }
+  ],
+  "cadence_min": 4,
+  "cadence_max": 5,
+  "active_platforms": [
+   "instagram",
+   "facebook",
+   "tiktok",
+   "gbp"
+  ],
+  "todo": [
+   "Liens Uber Eats et Deliveroo (dès que les pages existent)",
+   "Prix vérifiés sur les deux apps (date de vérification) — sans elle, aucun prix ne s'écrit",
+   "Fiche Google Business (demandée à J-7) et identifiant d'établissement",
+   "Facebook reprend Instagram automatiquement : couper ce partage, sinon chaque photo sort deux fois",
+   "Responsable de la marque (Lucie) : e-mail"
+  ],
+  "_comptes": {
+   "instagram": "@sazu.montpellier",
+   "tiktok": "@sazu.montpellier",
+   "facebook": "SAZÚ Montpellier"
+  },
+  "_concurrents": [
+   "Pokawa",
+   "Eat Salad",
+   "Olla",
+   "Pokhawaï",
+   "Fresh Burritos"
+  ],
+  "_series": [
+   {
+    "label": "Chaud devant",
+    "weekday": 1,
+    "time": "11:15",
+    "pillar": "chaud_devant",
+    "starts_on": "2026-12-01"
+   },
+   {
+    "label": "Mercredi coulisses",
+    "weekday": 2,
+    "time": "11:15",
+    "pillar": "cuisine_ce_matin",
+    "starts_on": "2026-12-01"
+   },
+   {
+    "label": "Un bowl, un pays",
+    "weekday": 3,
+    "time": "18:00",
+    "pillar": "un_bowl_un_pays",
+    "starts_on": "2026-12-01"
+   },
+   {
+    "label": "Viernes suave o fuego",
+    "weekday": 4,
+    "time": "18:00",
+    "pillar": "suave_fuego",
+    "starts_on": "2026-12-04"
+   }
+  ],
+  "_responsable": {
+   "nom": "Responsable SAZÚ",
+   "code_dev": "202020"
+  }
+ }
+]
