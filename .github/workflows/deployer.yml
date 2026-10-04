@@ -1,0 +1,238 @@
+# ═══ ALMA SOCIAL — mise en ligne sur Clever Cloud ═══
+#
+# Une poussée sur `main` (ou un clic sur « Run workflow ») : les bancs d'abord,
+# et SEULEMENT s'ils sont verts, le déploiement. La première fois, ce fichier
+# fabrique tout ce qui manque — l'application, sa base PostgreSQL, son disque
+# de photos (FS Bucket), ses variables — puis il ne fait plus que déployer.
+#
+# Trois secrets à poser UNE fois, dans le dépôt :
+# Settings → Secrets and variables → Actions → New repository secret
+#   CLEVER_TOKEN, CLEVER_SECRET  — l'accès Clever (sur le Mac :
+#                                  ~/.config/clever-cloud/clever-tools.json)
+#   SOCIAL_CODE_PDG              — le code de connexion du PDG (8 chiffres)
+# Et, facultative, une VARIABLE (onglet « Variables ») :
+#   CLEVER_ORG                   — l'organisation Clever (orga_…), si le compte
+#                                  en a plusieurs
+#
+# Aucune valeur n'est jamais imprimée : la clé de chiffrement est fabriquée
+# sur place, masquée, et posée directement chez Clever.
+#
+# Ce qui fait foi n'est PAS le code de sortie de `clever deploy` : c'est
+# `clever activity` (OK sur CE commit) puis le site lui-même (`/sante` → ok).
+name: deploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Deux déploiements en même temps, c'est deux horloges sur la même base.
+concurrency:
+  group: deploiement
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  ALIAS: alma-social
+  NOM_APP: alma-social
+  CLEVER_TOKEN: ${{ secrets.CLEVER_TOKEN }}
+  CLEVER_SECRET: ${{ secrets.CLEVER_SECRET }}
+  API: https://api.clever-cloud.com/v2
+
+jobs:
+  bancs:
+    uses: ./.github/workflows/bancs.yml
+
+  deployer:
+    needs: bancs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Les secrets sont-ils posés ?
+        env:
+          CODE_PDG: ${{ secrets.SOCIAL_CODE_PDG }}
+        run: |
+          manque=""
+          [ -n "${CLEVER_TOKEN:-}" ]  || manque="$manque CLEVER_TOKEN"
+          [ -n "${CLEVER_SECRET:-}" ] || manque="$manque CLEVER_SECRET"
+          [ -n "${CODE_PDG:-}" ]      || manque="$manque SOCIAL_CODE_PDG"
+          if [ -n "$manque" ]; then
+            echo "❌ secrets absents :$manque"
+            echo "   Settings → Secrets and variables → Actions → New repository secret."
+            echo "   Rien n'a été touché chez Clever."
+            exit 1
+          fi
+          echo "✅ les trois secrets sont là."
+
+      # `fetch-depth: 0` : Clever reçoit un push git, il lui faut l'historique.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: L'outil Clever
+        run: |
+          npm install -g clever-tools@4.11.0 --no-audit --no-fund
+          clever version
+
+      # `/v2/summary` rend en une fois l'utilisateur, ses organisations, leurs
+      # applications et leurs add-ons : de quoi tout trouver sans deviner.
+      - name: L'organisation
+        id: orga
+        env:
+          ORG_CHOISIE: ${{ vars.CLEVER_ORG }}
+        run: |
+          clever curl "$API/summary" > /tmp/summary.json
+          jq -e '.user.id' /tmp/summary.json > /dev/null || {
+            echo "❌ Clever ne répond pas comme prévu : les identifiants sont-ils les bons ?"
+            exit 1
+          }
+          if [ -n "${ORG_CHOISIE:-}" ]; then
+            org="$ORG_CHOISIE"
+          else
+            n=$(jq '[.organisations[] | select(.id | startswith("orga_"))] | length' /tmp/summary.json)
+            if [ "$n" = "1" ]; then
+              org=$(jq -r '.organisations[] | select(.id | startswith("orga_")) | .id' /tmp/summary.json)
+            elif [ "$n" = "0" ]; then
+              org=$(jq -r '.user.id' /tmp/summary.json)
+            else
+              echo "❌ plusieurs organisations : posez la variable CLEVER_ORG avec l'une d'elles."
+              jq -r '.organisations[] | select(.id | startswith("orga_")) | "   \(.id)  \(.name)"' /tmp/summary.json
+              exit 1
+            fi
+          fi
+          echo "organisation : $org"
+          echo "org=$org" >> "$GITHUB_OUTPUT"
+
+      - name: L'application (créée la première fois)
+        id: app
+        env:
+          ORG: ${{ steps.orga.outputs.org }}
+        run: |
+          app=$(jq -r --arg o "$ORG" --arg n "$NOM_APP" '
+            ([.organisations[] | select(.id == $o) | .applications[]?] + (if .user.id == $o then .user.applications // [] else [] end))
+            | map(select(.name == $n)) | .[0].id // empty' /tmp/summary.json)
+          if [ -z "$app" ]; then
+            echo "première fois : création de $NOM_APP (Python, Paris)"
+            clever create --type python "$NOM_APP" --org "$ORG" --region par --alias "$ALIAS"
+            app=$(jq -r '.apps[0].app_id' .clever.json)
+            echo "nouvelle=oui" >> "$GITHUB_OUTPUT"
+          else
+            clever link "$app" --org "$ORG" --alias "$ALIAS"
+          fi
+          echo "application : $app"
+          echo "id=$app" >> "$GITHUB_OUTPUT"
+
+      # UNE instance, toujours : l'horloge de publication vit dans le processus
+      # web. Deux instances = deux horloges = chaque post publié deux fois.
+      - name: Une instance, et jamais deux en même temps
+        env:
+          APP: ${{ steps.app.outputs.id }}
+        run: |
+          clever scale --alias "$ALIAS" --flavor XS --instances 1
+          clever config set zero-downtime false --app "$APP"
+          v=$(clever config get zero-downtime --app "$APP" | tr -d '[:space:]')
+          [ "$v" = "false" ] || { echo "❌ zero-downtime vaut « $v » au lieu de false"; exit 1; }
+          echo "✅ une instance, zero-downtime=false"
+
+      - name: La base PostgreSQL et le disque des photos
+        env:
+          ORG: ${{ steps.orga.outputs.org }}
+          APP: ${{ steps.app.outputs.id }}
+        run: |
+          relies=$(clever curl "$API/organisations/$ORG/applications/$APP/addons" | jq -r '.[].provider.id')
+          echo "add-ons déjà reliés : ${relies:-aucun}"
+          creer() {  # creer <fournisseur> <nom> [--plan …]
+            fournisseur=$1; nom=$2; shift 2
+            if printf '%s\n' "$relies" | grep -qx "$fournisseur"; then
+              echo "✔ $fournisseur déjà relié"; return 0
+            fi
+            echo "création de $nom ($fournisseur)"
+            if ! clever addon create "$fournisseur" "$nom" "$@" --link "$ALIAS" --org "$ORG" --region par --yes; then
+              echo "❌ création refusée. Les offres disponibles :"
+              clever addon providers show "$fournisseur" || true
+              return 1
+            fi
+          }
+          creer postgresql-addon alma-social-base --plan xxs_sml
+          creer fs-bucket alma-social-photos
+
+      # Les variables. Celles qui se recalculent sont reposées à chaque fois ;
+      # celles qu'on ne doit JAMAIS changer après coup (la clé qui chiffre les
+      # jetons, le code du PDG) ne sont posées que si elles manquent.
+      - name: Les variables d'environnement
+        id: env
+        env:
+          ORG: ${{ steps.orga.outputs.org }}
+          APP: ${{ steps.app.outputs.id }}
+          CODE_PDG: ${{ secrets.SOCIAL_CODE_PDG }}
+        run: |
+          noms=$(clever curl "$API/organisations/$ORG/applications/$APP/env" | jq -r '.[].name')
+          a() { printf '%s\n' "$noms" | grep -qx "$1"; }
+
+          bucket=$(clever env --alias "$ALIAS" | sed -n 's/^BUCKET_HOST=//p' | tr -d '"' | head -1)
+          [ -n "$bucket" ] || { echo "❌ BUCKET_HOST introuvable : le FS Bucket est-il relié ?"; exit 1; }
+
+          domaine=$(clever curl "$API/organisations/$ORG/applications/$APP" | jq -r '.vhosts[0].fqdn // empty' | sed 's:/*$::')
+          [ -n "$domaine" ] || { echo "❌ l'application n'a aucun domaine"; exit 1; }
+          echo "domaine : $domaine"
+          echo "domaine=$domaine" >> "$GITHUB_OUTPUT"
+
+          clever env set --alias "$ALIAS" CC_PYTHON_VERSION 3.13
+          clever env set --alias "$ALIAS" CC_RUN_COMMAND "uvicorn app:app --host 0.0.0.0 --port 9000"
+          clever env set --alias "$ALIAS" CC_FS_BUCKET "/fichiers:$bucket"
+          clever env set --alias "$ALIAS" SOCIAL_FICHIERS fichiers
+          clever env set --alias "$ALIAS" SOCIAL_PRODUCTION 1
+          a SOCIAL_URL_PUBLIQUE || clever env set --alias "$ALIAS" SOCIAL_URL_PUBLIQUE "https://$domaine"
+
+          if a SOCIAL_CODE_PDG; then echo "✔ SOCIAL_CODE_PDG déjà posé"
+          else clever env set --alias "$ALIAS" SOCIAL_CODE_PDG "$CODE_PDG" > /dev/null; echo "✔ SOCIAL_CODE_PDG posé"; fi
+
+          if a SOCIAL_CLE_CHIFFREMENT; then echo "✔ SOCIAL_CLE_CHIFFREMENT déjà posée (jamais changée : les jetons chiffrés deviendraient illisibles)"
+          else
+            cle=$(openssl rand -base64 48 | tr -d '\n')
+            echo "::add-mask::$cle"
+            clever env set --alias "$ALIAS" SOCIAL_CLE_CHIFFREMENT "$cle" > /dev/null
+            echo "✔ SOCIAL_CLE_CHIFFREMENT fabriquée et posée (jamais affichée)"
+          fi
+
+      - name: Déployer
+        run: |
+          clever deploy --alias "$ALIAS" --branch main --force \
+            --same-commit-policy ignore --exit-on deploy-end || true
+          echo "(code de sortie ignoré à dessein — seuls clever activity et le site tranchent)"
+
+      - name: L'activité Clever doit dire OK sur CE commit
+        run: |
+          court=$(printf '%s' "${{ github.sha }}" | cut -c1-7)
+          clever activity --alias "$ALIAS" | tee /tmp/activite.txt
+          ligne=$(grep -i -- "$court" /tmp/activite.txt | tail -1 || true)
+          [ -n "$ligne" ] || { echo "❌ $court n'apparaît pas dans l'activité."; exit 1; }
+          case "$(printf '%s' "$ligne" | tr 'a-z' 'A-Z')" in
+            *OK*) echo "✅ Clever déclare le déploiement de $court réussi." ;;
+            *)    echo "❌ l'activité ne dit pas OK sur $court : $ligne"
+                  clever logs --alias "$ALIAS" --since 10m | tail -80 || true
+                  exit 1 ;;
+          esac
+
+      - name: Le site répond-il ?
+        env:
+          DOMAINE: ${{ steps.env.outputs.domaine }}
+        run: |
+          for i in $(seq 1 12); do
+            r=$(curl -fsS --max-time 10 "https://$DOMAINE/sante" || true)
+            if [ "$r" = "ok" ]; then
+              echo "✅ https://$DOMAINE/sante → ok"
+              echo "## ✅ ALMA SOCIAL en ligne : https://$DOMAINE" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "essai $i : pas encore ($r)"; sleep 10
+          done
+          echo "❌ https://$DOMAINE/sante ne répond pas ok."
+          clever logs --alias "$ALIAS" --since 10m | tail -80 || true
+          exit 1

@@ -129,7 +129,17 @@ deux instances auraient deux horloges.
 
 ## Mettre en ligne (Clever Cloud)
 
-Une application Clever Cloud à elle, reliée à ce dépôt :
+**Une poussée sur `main` déploie toute seule** (`.github/workflows/deployer.yml`) :
+les bancs d'abord, et seulement s'ils sont verts, la mise en ligne. La première
+fois, le workflow fabrique l'application, la base PostgreSQL, le FS Bucket et
+les variables ci-dessous ; la clé de chiffrement est tirée au hasard sur place
+et n'est jamais affichée. Il faut d'abord poser trois secrets dans le dépôt
+(Settings → Secrets and variables → Actions) : `CLEVER_TOKEN`, `CLEVER_SECRET`
+et `SOCIAL_CODE_PDG` — plus la variable `CLEVER_ORG` si le compte Clever a
+plusieurs organisations. Le déploiement n'est jugé réussi que si `clever
+activity` dit OK sur le commit ET si `/sante` répond `ok`.
+
+Ce que le workflow règle :
 
 | Réglage | Valeur |
 |---|---|

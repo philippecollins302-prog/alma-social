@@ -1,16 +1,20 @@
 # ═══ ALMA SOCIAL — les bancs, sur chaque poussée et chaque pull request ═══
 #
 # Un seul verdict, et il bloque : `bancs/tous.sh` s'arrête au premier rouge.
-# Cette chaîne NE DÉPLOIE RIEN : la mise en ligne chez l'hébergeur se décide
-# avec Philippe (README.md, « Mettre en ligne »).
+# Ce fichier ne déploie rien lui-même : `deployer.yml` l'appelle, et ne met
+# en ligne que si tout est vert.
 #
 # Versions des actions : le premier majeur qui tourne sur Node 24
 # (checkout v5, setup-python v6), lu dans le `using:` de chaque `action.yml`.
 name: bancs
 
+# Sur `main`, c'est `deployer.yml` qui les appelle avant de déployer : une
+# seule exécution par poussée, et rien ne part si un banc est rouge.
 on:
   push:
+    branches-ignore: [main]
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
