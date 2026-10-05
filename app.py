@@ -33,7 +33,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTe
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import desc, func, select, update
 
-from alma_social import (acces, agents, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
+from alma_social import (acces, agents, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, coach, conditions, recyclage, temps_forts, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
                          mesure, pipeline, planificateur, rapport, relation, reseaux, securite, stockage)
 from alma_social.publieurs import upload_post
 from alma_social.publieurs.base import ErreurPublication
@@ -223,7 +223,9 @@ async def depot(request: Request, marque: str = Form(...), pilier: str = Form(""
 
 _ETATS = {"recu": "Reçue — lecture en cours", "banque": "En banque : elle sortira au prochain créneau libre",
           "programme": "Programmée", "publie": "Publiée", "refuse": "Écartée", "quarantaine": "Mise de côté",
-          "retire": "Retirée partout", "studio": "Dans un montage du studio (Reel et carrousel)"}
+          "retire": "Retirée partout", "studio": "Dans un montage du studio (Reel et carrousel)",
+          "decoupage": "Vidéo reçue — découpage en clips en cours",
+          "decoupee": "Vidéo découpée : ses clips sont en banque, chacun avec son image"}
 _ETATS_POST = {"preparation": "en préparation", "programme": "programmée", "a_valider": "à valider",
                "envoi": "en cours d'envoi", "publie": "publiée", "simule": "simulée (bac à sable)",
                "suspendu": "suspendue", "echec": "échec", "refuse": "texte refusé", "retire": "retirée",
@@ -281,7 +283,12 @@ def vignette(asset_id: int, request: Request):
     cle = stockage.cle_cache("vignette", rel)
     chemin = stockage.racine() / "vignettes" / f"{cle}.jpg"
     if not chemin.exists():
-        img = images.ouvrir(stockage.chemin(rel))
+        if a["kind"] == "video":
+            from alma_social import clips
+            duree = (a.get("exif") or {}).get("duree_s") or 2
+            img = images.ouvrir(clips.image_a(stockage.chemin(rel), min(1.0, duree / 2)))
+        else:
+            img = images.ouvrir(stockage.chemin(rel))
         img.thumbnail((480, 480))
         images.enregistrer_jpeg(img, chemin, 82)
     return FileResponse(chemin, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
@@ -432,6 +439,26 @@ def calendrier(request: Request, marque: str, mois: str = ""):
         for s in creneaux_], "plan": plan, "plan_suivant": suivant, "stock": planificateur.stock(m)})
 
 
+@app.get("/api/moments")
+def moments(request: Request, marque: str):
+    """Quand publier et avec quoi : les sept meilleurs créneaux de chaque
+    réseau relié (appris sur la marque quand il y a assez de mesures), ce que
+    la banque garde en réserve, et les temps forts des deux mois à venir."""
+    u = _moi(request)
+    m = _voir(u, marque)
+    profils = mesure.profils(m["id"])
+    pfs = [c["platform"] for c in acces.comptes(m["id"]) if c["platform"] in reseaux.NOMS]
+    j = acces.aujourdhui()
+    return _json({
+        "reseaux": [{"cle": pf, "nom": reseaux.NOMS.get(pf, pf), "appris": bool(profils.get(pf)),
+                     "creneaux": creneaux.sept_meilleurs(m.get("sector") or "", pf, profils.get(pf))}
+                    for pf in dict.fromkeys(pfs)],
+        "exploration": round(creneaux.PART_EXPLORATION * 100),
+        "banque": {**recyclage.etat([m["id"]])[m["id"]], **planificateur.stock(m)},
+        "temps_forts": temps_forts.a_venir(m["id"], j, j + dt.timedelta(days=60)),
+        "a_confirmer": temps_forts.a_confirmer()})
+
+
 @app.post("/api/plan/{plan_id}/valider")
 def valider_plan(plan_id: int, request: Request):
     """Valider le calendrier proposé le 25. Sans validation, il s'applique quand même le 1er."""
@@ -568,6 +595,17 @@ def visuel_repetition(rid: int, nom: str, request: Request):
     return FileResponse(stockage.chemin(e["visuel"]["chemin"]), headers={"Cache-Control": "private, max-age=86400"})
 
 
+# ── Le coach terrain ─────────────────────────────────────────────────────
+@app.get("/api/coach")
+def brief_coach(request: Request, marque: str = ""):
+    """Ce qu'il faut photographier cette semaine, marque par marque — et comment."""
+    u = _moi(request)
+    ids = [marque] if marque else securite.marques_de(u)
+    for mid in ids:
+        _voir(u, mid)
+    return _json({"briefs": coach.briefs(ids)})
+
+
 # ── Le studio ────────────────────────────────────────────────────────────
 @app.get("/api/studio")
 def liste_studio(request: Request, marque: str = ""):
@@ -575,7 +613,8 @@ def liste_studio(request: Request, marque: str = ""):
     ids = [marque] if marque else securite.marques_de(u)
     for mid in ids:
         _voir(u, mid)
-    return _json({"travaux": studio.travaux(ids), "types": ["reel", "carrousel", "avant_apres", "rideau"]})
+    return _json({"travaux": studio.travaux(ids), "types": ["reel", "carrousel", "avant_apres", "rideau", "declinaison"],
+                  "declinaisons": [{"cle": k, "nom": n, "taille": f"{t[0]}×{t[1]}"} for k, n, t, _ in studio.DECLINAISONS]})
 
 
 @app.post("/api/studio")

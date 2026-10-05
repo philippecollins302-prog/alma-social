@@ -15,16 +15,11 @@ const CONSEILS = {
 
 function deposerInit() {
   $("#fichiers").addEventListener("change", e => {
-    ETAT.choisis = [...e.target.files];
+    choisirPhotos([...e.target.files], false);
     e.target.value = "";
-    $("#apercus").innerHTML = ETAT.choisis.map(f => `<img alt="" src="${URL.createObjectURL(f)}">`).join("");
-    $("#choisir").classList.toggle("pret", ETAT.choisis.length > 0);
-    $("#dictee").hidden = !ETAT.choisis.length;
-    const n = ETAT.choisis.length;
-    $("#choisir-texte").textContent = n ? `${n} photo${n > 1 ? "s" : ""} prête${n > 1 ? "s" : ""}` : "Prendre ou choisir des photos";
-    dessinerMarques();
   });
   dicter($("#micro"), $("#note"));
+
   $("#marques").addEventListener("click", async e => {
     const b = e.target.closest("[data-marque]");
     if (!b || !ETAT.choisis.length) return;
@@ -45,6 +40,27 @@ function deposerInit() {
   addEventListener("online", () => Attente.vider(suiviEnvoi).then(afficherEnvois));
   setInterval(() => navigator.onLine && Attente.vider(suiviEnvoi), 30000);
   Attente.vider(suiviEnvoi).then(afficherEnvois);
+}
+
+/* Une vignette locale : l'image elle-même, ou la vidéo arrêtée sur sa première seconde. */
+function vignetteLocale(f) {
+  const url = URL.createObjectURL(f);
+  return (f.type || "").startsWith("video/")
+    ? `<video class="vignette-video" muted playsinline preload="metadata" src="${url}#t=1"></video>`
+    : `<img alt="" src="${url}">`;
+}
+
+/* Les photos (ou vidéos) prêtes à partir — choisies dans la galerie, ou prises au viseur (ajoutées). */
+function choisirPhotos(fichiers, ajouter) {
+  ETAT.choisis = ajouter ? ETAT.choisis.concat(fichiers) : fichiers;
+  $("#apercus").innerHTML = ETAT.choisis.map(vignetteLocale).join("");
+  $("#choisir").classList.toggle("pret", ETAT.choisis.length > 0);
+  $("#dictee").hidden = !ETAT.choisis.length;
+  const n = ETAT.choisis.length, v = ETAT.choisis.filter(f => (f.type || "").startsWith("video/")).length;
+  $("#choisir-texte").textContent = !n ? "Prendre ou choisir des photos"
+    : v === n ? `${n} vidéo${n > 1 ? "s" : ""} : jusqu'à cinq clips tirés de chacune`
+    : `${n} fichier${n > 1 ? "s" : ""} prêt${n > 1 ? "s" : ""}${v ? ` dont ${v} vidéo${v > 1 ? "s" : ""}` : ""}`;
+  dessinerMarques();
 }
 
 function dessinerMarques() {
@@ -77,7 +93,7 @@ async function afficherEnvois() {
     ...enFile.map(e => {
       const t = e.etat === "refuse" ? `<span class="erreur">Refusée : ${esc(e.erreur)}</span>`
         : e.etat === "envoi" ? "Envoi…" : navigator.onLine ? "En attente d'envoi" : "Hors ligne : partira au retour du réseau";
-      return `<div class="envoi"><img alt="" src="${URL.createObjectURL(e.blob)}"><div>${puce(e.marque)}<b>${esc(nomMarque(e.marque))}</b><br>${t}</div>
+      return `<div class="envoi">${vignetteLocale(e.blob)}<div>${puce(e.marque)}<b>${esc(nomMarque(e.marque))}</b><br>${t}</div>
         ${e.etat === "refuse" ? `<button class="secondaire" data-oublier="${esc(e.ref)}">Oublier</button>` : ""}</div>`;
     }),
     ...finis.slice(-4).reverse().map(e => `<div class="envoi"><span class="chiffre or" style="font-size:30px">✓</span><div>${puce(e.marque)}<b>${esc(nomMarque(e.marque))}</b><br>

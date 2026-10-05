@@ -321,7 +321,8 @@ def _recyclables(m: dict) -> list:
     with db.moteur().begin() as c:
         return db.lignes(c.execute(select(db.assets).where(
             db.assets.c.brand_id == m["id"], db.assets.c.status == "publie", db.assets.c.kind == "photo",
-            db.assets.c.last_used_at < limite).order_by(db.assets.c.score.desc(), db.assets.c.usability.desc())))
+            db.assets.c.last_used_at < limite).order_by((db.assets.c.recyclage == "gagnant").desc(),
+                                                        db.assets.c.score.desc(), db.assets.c.usability.desc())))
 
 
 def choisir_photo(m: dict, s: dict, deja_pris: set):
@@ -340,7 +341,14 @@ def choisir_photo(m: dict, s: dict, deja_pris: set):
     vieux = [a for a in _recyclables(m) if possible(a)]
     if s["pillar"]:
         vieux = [a for a in vieux if a["pillar"] == s["pillar"]] or vieux
-    return vieux[0] if vieux else None
+    if vieux:
+        return vieux[0]
+    # Le stock frais manque : un intemporel ressort (au plus tous les 45 jours).
+    from . import recyclage
+    intemporels = [a for a in recyclage.evergreen_disponibles(m) if possible(a)]
+    if s["pillar"]:
+        intemporels = [a for a in intemporels if a["pillar"] == s["pillar"]] or intemporels
+    return intemporels[0] if intemporels else None
 
 
 def remplir(m: dict, par: str = "systeme") -> dict:
@@ -362,6 +370,9 @@ def remplir(m: dict, par: str = "systeme") -> dict:
             rapport["manque"].append(s)
             continue
         pris.add(a["id"])
+        if a.get("_evergreen"):
+            from . import recyclage
+            recyclage.evergreen_sorti(a["_evergreen"])
         if a["status"] == "publie":
             with db.moteur().begin() as c:     # recyclage : la photo repart de la banque
                 c.execute(update(db.assets).where(db.assets.c.id == a["id"]).values(status="banque"))
@@ -404,7 +415,10 @@ def alerte_stock(m: dict) -> str:
         n = len(jours)
         morceaux.append(f"{n} photo{'s' if n > 1 else ''} « {lib} »")
     phrase = (f"Il manque {_et(morceaux)} pour {m['name']} avant {_JOURS[avant.weekday()]} {avant:%d/%m}.")
-    corps = (phrase + "\n\nDéposez-les dans ALMA SOCIAL (un tap sur la marque) : elles partiront "
+    from . import coach
+    b = coach.brief(m)
+    detail = ("\n\nLe brief du coach : " + b["phrase"] + "\nComment : " + " ; ".join(b["comment"]) + ".") if b else ""
+    corps = (phrase + detail + "\n\nDéposez-les dans ALMA SOCIAL (un tap sur la marque) : elles partiront "
              "toutes seules aux créneaux prévus.\nEn banque aujourd'hui : "
              f"{len(banque)} photo{'s' if len(banque) > 1 else ''} prête{'s' if len(banque) > 1 else ''}.")
     semaine = _lundi(j0).isoformat()
@@ -500,9 +514,13 @@ def tour_du_matin(par: str = "systeme") -> dict:
             plan = plan_du_mois(m["id"], a, mo)
             if plan:
                 rappel_veille(m, plan)
+        from . import recyclage, temps_forts
+        tri = recyclage.classer(m, par)
+        temps_forts.poser(m, par)
         r = remplir(m, par)
         phrase = alerte_stock(m)
-        out[m["id"]] = {"rempli": r["rempli"], "manque": len(r["manque"]), "stock": phrase}
+        out[m["id"]] = {"rempli": r["rempli"], "manque": len(r["manque"]), "stock": phrase,
+                        "seconde_chance": len(tri["malchanceux"]), "gagnants": len(tri["gagnants"])}
     journal.noter(par, "tour_du_matin", "planificateur", j.isoformat(), None, apres=out)
     return out
 

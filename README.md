@@ -209,6 +209,27 @@ réseau, chaque heure, le logo caché jusqu'au 13/11 à 18 h. Rien n'est publié
 Une étape sans photo du bon sujet part en carte à la charte : déposer une
 photo la remplace.
 
+## Filmer, et laisser faire
+
+**Une vidéo se dépose comme une photo.** Une visite de chantier de quatre
+minutes donne jusqu'à cinq clips de 8 à 15 secondes, choisis sur la netteté,
+la lumière, le mouvement et le son, calés sur les changements de plan, au
+format 9:16, avec la phrase dictée en accroche. Chaque clip est noté sur son
+potentiel (Plus → Studio) et son image la plus nette entre en banque : c'est
+elle qui porte le clip vers Instagram, TikTok et YouTube. Pas de sous-titres
+— la parole n'est pas transcrite, et c'est écrit sur chaque clip.
+
+**Avant de filmer**, le brief du coach (écran Déposer) dit ce qui manque à
+chaque marque ; le **viseur guidé** pose la grille et dit en direct « plus de
+lumière », « tenez le téléphone droit », « ne bougez plus ».
+
+**Une photo, tous les formats** : Studio → Fabriquer → « Tous les formats »
+rend carré, portrait, story, LinkedIn, miniature YouTube et fiche Google.
+
+**Calendrier → « Quand publier, et avec quoi »** : les sept meilleurs moments
+de chaque réseau, la réserve de la banque (secondes chances, gagnants,
+intemporels) et les temps forts à venir.
+
 ## Pour aller plus loin
 
 - `DECISIONS.md` — chaque choix technique, en une ligne, avec sa raison ;

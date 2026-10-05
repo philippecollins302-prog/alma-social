@@ -79,6 +79,9 @@ def recevoir(marque_id: str, octets: bytes, nom_fichier: str = "", client_ref: s
         raise ValueError("marque inconnue")
     if not octets:
         raise ValueError("fichier vide")
+    from . import clips
+    if clips.est_video(octets, nom_fichier):
+        return recevoir_video(m, octets, nom_fichier, client_ref, auteur, pilier, note)
     if len(octets) > TAILLE_MAX:
         raise ValueError(f"fichier trop lourd ({len(octets) // 1_000_000} Mo, maximum {TAILLE_MAX // 1_000_000} Mo)")
     if client_ref:
@@ -121,6 +124,65 @@ def recevoir(marque_id: str, octets: bytes, nom_fichier: str = "", client_ref: s
                          "dimensions": f"{img.width}×{img.height}", "prise_le": vals["taken_at"]})
     file.ajouter("analyser", {"asset_id": aid}, dedup=f"analyser:{aid}")
     return asset(aid)
+
+
+def recevoir_video(m: dict, octets: bytes, nom_fichier: str, client_ref, auteur, pilier: str, note: str) -> dict:
+    """Une vidéo longue : rangée telle quelle (elle ne part jamais entière),
+    puis découpée en clips par la file. Ce sont ses images fixes qui entrent
+    en banque, chacune portant son clip."""
+    from . import clips
+    if len(octets) > clips.TAILLE_MAX:
+        raise ValueError(f"vidéo trop lourde ({len(octets) // 1_000_000} Mo, maximum "
+                         f"{clips.TAILLE_MAX // 1_000_000} Mo) : filmez en 1080p plutôt qu'en 4K")
+    if client_ref:
+        with db.moteur().begin() as c:
+            deja = db.ligne(c.execute(select(db.assets).where(db.assets.c.client_ref == client_ref)))
+        if deja:
+            return {**deja, "deja": True}
+    ext = pathlib.Path(nom_fichier or "").suffix.lower().lstrip(".")
+    rel, sha = stockage.ranger_original(octets, ext if ext in clips.EXTENSIONS else "mp4")
+    with db.moteur().begin() as c:
+        meme = db.ligne(c.execute(select(db.assets).where(
+            db.assets.c.brand_id == m["id"], db.assets.c.sha256 == sha)))
+    if meme:
+        return {**meme, "deja": True}
+    try:
+        info = clips.sonder(stockage.chemin(rel))
+    except Exception as e:
+        raise ValueError("cette vidéo ne se lit pas") from e
+    if info["duree"] > clips.DUREE_MAX_S:
+        raise ValueError(f"vidéo de {info['duree'] / 60:.0f} minutes : au-delà de "
+                         f"{clips.DUREE_MAX_S // 60}, coupez-la avant de la déposer")
+    vals = dict(brand_id=m["id"], uploader_id=(auteur or {}).get("id"), client_ref=client_ref, original_path=rel,
+                sha256=sha, width=info["largeur"], height=info["hauteur"], exif={"duree_s": info["duree"]},
+                pillar=pilier if acces.pilier(m, pilier) else "", kind="video", status="decoupage",
+                note=(note or "").strip()[:500], created_at=db.maintenant())
+    try:
+        with db.moteur().begin() as c:
+            aid = c.execute(insert(db.assets).values(**vals)).inserted_primary_key[0]
+    except IntegrityError:
+        with db.moteur().begin() as c:
+            deja = db.ligne(c.execute(select(db.assets).where(db.assets.c.client_ref == client_ref)))
+        return {**deja, "deja": True}
+    journal.noter(_qui(auteur), "depot_video", "asset", aid, m["id"],
+                  apres={"fichier": nom_fichier, "sha256": sha, "taille": len(octets), "duree": info["duree"]})
+    file.ajouter("decouper", {"asset_id": aid}, dedup=f"decouper:{aid}", essais_max=3)
+    return asset(aid)
+
+
+@file.traitant("decouper")
+def decouper(p: dict):
+    from . import clips
+    a = asset(p["asset_id"])
+    if not a or a["kind"] != "video" or a["status"] != "decoupage":
+        return
+    try:
+        faits = clips.decouper(a["id"])
+    except ValueError as e:
+        _maj(db.assets, a["id"], status="refuse", refusal_reason=str(e)[:300])
+        raise file.Abandon(str(e))
+    _maj(db.assets, a["id"], status="decoupee" if faits else "refuse",
+         refusal_reason="" if faits else "trop courte pour en tirer un clip (3 secondes au moins)")
 
 
 def _qui(auteur) -> str:
@@ -254,10 +316,33 @@ def statuts_doublon() -> tuple:
     return base + ("simule",) if journal.bac_a_sable() else base
 
 
+def fenetre_doublon(a: dict) -> dt.timedelta:
+    """90 jours entre deux sorties d'une même image sur un réseau — sauf une
+    seconde chance (21 jours : c'est l'heure qui avait échoué, pas l'image) et
+    un intemporel (45 jours : il est fait pour revenir)."""
+    from . import recyclage
+    if a.get("recyclage") == "seconde_chance":
+        return recyclage.DELAI_SECONDE_CHANCE
+    if a.get("pillar") and a["pillar"] in recyclage.piliers_evergreen(a["brand_id"]):
+        return recyclage.ECART_EVERGREEN
+    return FENETRE_DOUBLON
+
+
+def variante_cadrage(a: dict) -> int:
+    """Une photo qui ressort (seconde chance, gagnant, intemporel) change de cadrage."""
+    return 1 if a.get("recyclage") or _deja_sortie(a["id"]) else 0
+
+
+def _deja_sortie(asset_id: int) -> bool:
+    with db.moteur().begin() as c:
+        return c.execute(select(db.posts.c.id).where(db.posts.c.asset_id == asset_id,
+                                                     db.posts.c.status.in_(("publie", "simule")))).first() is not None
+
+
 def doublons(a: dict, plateformes: list, sauf_creneau: int | None = None) -> dict:
     """{réseau: post_id} — la même image (empreinte visuelle) déjà sortie ou
-    programmée sur ce réseau depuis moins de 90 jours."""
-    depuis = db.maintenant() - FENETRE_DOUBLON
+    programmée sur ce réseau depuis moins de 90 jours (voir `fenetre_doublon`)."""
+    depuis = db.maintenant() - fenetre_doublon(a)
     with db.moteur().begin() as c:
         q = (select(db.posts.c.id, db.posts.c.platform, db.assets.c.phash)
              .join(db.assets, db.assets.c.id == db.posts.c.asset_id)
@@ -300,6 +385,8 @@ def contexte_du_creneau(s: dict, m: dict) -> dict:
         ctx["sujet proposé"] = s["topic"]
     if s.get("brief"):
         ctx["consigne"] = s["brief"]
+    if s.get("source") == "temps_fort" and s.get("topic"):
+        ctx["temps fort"] = s["topic"]
     if s.get("series_id"):
         se = _un(db.series, s["series_id"])
         if se:
@@ -326,7 +413,8 @@ _MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "aoû
 def _declencheur(s: dict, a: dict) -> str:
     if a.get("last_used_at"):
         return "recyclage"
-    return {"plan": "calendrier", "depot": "depot", "serie": "serie", "campagne": "campagne"}.get(s["source"], "depot")
+    return {"plan": "calendrier", "depot": "depot", "serie": "serie", "campagne": "campagne",
+            "temps_fort": "calendrier"}.get(s["source"], "depot")
 
 
 def _anciens_textes(asset_id: int) -> list:
@@ -386,14 +474,23 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
         # Ce que le terrain a dit en déposant : le texte peut s'en servir, ses
         # chiffres deviennent citables (c'est un fait rapporté par l'équipe).
         contexte["dit par l'équipe au dépôt"] = a["note"]
-    montages = {}
-    if marque_.mise_en_scene(m) == "studio_permis":
-        from . import studio
-        montages = studio.montages_de(a["id"])
-        if montages:
-            contexte["format"] = ("selon le réseau : " + " ; ".join(
-                f"{reseaux.NOMS.get(pf, pf)} → {montages[t]['type']} de {len(montages[t]['asset_ids'])} photos"
-                for pf, t in studio.MONTAGE_PAR_RESEAU.items() if pf in retenus and t in montages))
+    reprise = a.get("recyclage") in ("seconde_chance", "gagnant") or _deja_sortie(a["id"])
+    if reprise:
+        contexte["reprise"] = ("cette photo est déjà sortie : écris un texte NEUF, sous un autre angle "
+                               "(les anciens textes sont fournis pour ne pas les répéter)")
+    variante = variante_cadrage(a)
+    from . import studio
+    montages = studio.montages_de(a["id"])
+    if marque_.mise_en_scene(m) != "studio_permis":
+        # Une réalisation : seul le clip (des images réelles, coupées, jamais
+        # retouchées) la porte ; les montages du studio restent aux produits.
+        montages = {t: j for t, j in montages.items() if t == "clip"}
+    if montages:
+        choix = {pf: studio.montage_pour(pf, montages) for pf in retenus}
+        contexte["format"] = "selon le réseau : " + " ; ".join(
+            f"{reseaux.NOMS.get(pf, pf)} → " + ("clip vidéo extrait d'une vidéo filmée sur place" if j["type"] == "clip"
+                                               else f"{j['type']} de {len(j['asset_ids'])} photos")
+            for pf, j in choix.items() if j)
     lecture = a["vision"] or {}
     textes = redaction.ecrire(m, lecture, retenus, cts, pilier, contexte, _anciens_textes(a["id"]), jour,
                               slot_id=s["id"])
@@ -419,8 +516,11 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
             journal.noter(par, "texte_refuse", "post", pid, m["id"],
                           apres={"reseau": pf, "violations": (t or {}).get("violations")})
             continue
+        # Une seconde chance part sur un des meilleurs créneaux : c'est l'heure qui avait échoué.
+        explore = not imposee and a.get("recyclage") != "seconde_chance" \
+            and creneaux.explorer(f"{s['id']}:{a['id']}:{pf}")
         heure = creneaux.choisir_heure(m["sector"], pf, jour, _occupes(m["id"], pf, jour), soeurs,
-                                       profils.get(pf), apres, imposee)
+                                       profils.get(pf), apres, imposee, exploration=explore)
         if heure is None:
             ecartes[pf] = "aucune heure libre ce jour-là (espacement de 16 h sur un même réseau)"
             continue
@@ -428,7 +528,7 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
         avec_logo = acces.logo_permis(m, heure)
         fmt = format_pour(pf, cts)
         est_video = pf in reseaux.VIDEO_SEULEMENT
-        montage = montages.get(studio.MONTAGE_PAR_RESEAU.get(pf, "")) if montages else None
+        montage = studio.montage_pour(pf, montages) if montages else None
         if montage and not avec_logo and montage["sortie"].get("params", {}).get("avec_logo", True):
             montage = None          # le logo n'est pas encore permis à cette heure-là : la photo seule
         extras, forme = [], ("video" if est_video else "image")
@@ -438,7 +538,8 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
                 rendu = {**_info_rendu(rs[0]), "vues": len(rs)}
                 extras, forme = [r["id"] for r in rs[1:]], montage["type"]
             else:
-                rendu = declinaison(a, m, "9:16" if est_video else fmt, en_video=est_video, avec_logo=avec_logo)
+                rendu = declinaison(a, m, "9:16" if est_video else fmt, en_video=est_video, avec_logo=avec_logo,
+                                    variante=variante)
         except Exception as e:
             log.exception("déclinaison %s/%s", a["id"], pf)
             raise file.Reessayer(f"retouche : {e}")
@@ -453,7 +554,8 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
                        post_format=forme, media_job_id=(montage or {}).get("id"), extra_renditions=extras,
                        prompt_version=t["prompt_version"],
                        guard_report={"violations": [], "essais": t["essais"], "traitements": rendu["traitements"],
-                                     "critique": t.get("critique")})
+                                     "critique": t.get("critique"),
+                                     "creneau": "impose" if imposee else ("exploration" if explore else "meilleur")})
         lien = mesure.liens_de_publication(m, pid, pf)
         texte = redaction.poser_lien(t["texte"], pf, lien["url"])
         texte = redaction.ajouter_mentions(texte, m, (cts.get(pf) or {}).get("caption_max"))
@@ -470,8 +572,10 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
                          essais_max=10)
         crees.append(pid)
     with db.moteur().begin() as c:
-        c.execute(update(db.assets).where(db.assets.c.id == a["id"]).values(
-            status="programme", last_used_at=db.maintenant()))
+        vals = {"status": "programme", "last_used_at": db.maintenant()}
+        if crees and a.get("recyclage") == "seconde_chance":
+            vals["recyclage"] = "seconde_chance_faite"      # une seule seconde chance
+        c.execute(update(db.assets).where(db.assets.c.id == a["id"]).values(**vals))
     if not crees:
         _liberer(s, a, ecartes, par)
         return {"posts": [], "ecartes": ecartes}
@@ -533,11 +637,15 @@ def base_retouchee(a: dict, m: dict):
     return img, faits
 
 
-def declinaison(a: dict, m: dict, fmt: str, en_video: bool = False, avec_logo: bool = True) -> dict:
-    """→ {id, chemin, format, largeur, hauteur, poids_mo, video, duree, traitements, public_token}."""
+def declinaison(a: dict, m: dict, fmt: str, en_video: bool = False, avec_logo: bool = True,
+                variante: int = 0) -> dict:
+    """→ {id, chemin, format, largeur, hauteur, poids_mo, video, duree, traitements, public_token}.
+    `variante` 1 : un cadrage resserré sur le sujet (une photo qui ressort ne
+    doit pas ressembler à sa première sortie)."""
     kit = m.get("kit") or {}
     carte = (a["vision"] or {}).get("carte") if a["kind"] == "carte" else None
     cle = stockage.cle_cache(a["sha256"], fmt, images.VERSION_TRAITEMENTS, m.get("kit_version", 1),
+                             f"variante-{variante}" if variante else "",
                              a["blurred_path"] or "", _niveau(m), "logo" if avec_logo else "sans-logo",
                              "video" if en_video else "", json.dumps(carte, sort_keys=True) if carte else "",
                              json.dumps(kit, sort_keys=True, default=str))
@@ -549,8 +657,11 @@ def declinaison(a: dict, m: dict, fmt: str, en_video: bool = False, avec_logo: b
             faits = ["carte typographique à la charte"]
         else:
             base, faits = base_retouchee(a, m)
-            img = images.recadrer(base, fmt, (a["vision"] or {}).get("sujet_boite"))
-            faits = faits + [f"recadrage {fmt} sur le sujet"]
+            sujet = (a["vision"] or {}).get("sujet_boite")
+            if variante:
+                sujet = images.resserrer(sujet)
+            img = images.recadrer(base, fmt, sujet)
+            faits = faits + [f"recadrage {fmt} sur le sujet" + (" (cadrage resserré : nouvelle sortie)" if variante else "")]
             img, habillage = images.habiller(img, kit, m["name"], fmt, avec_logo)
             faits += habillage
         rel = stockage.chemin_declinaison(a["id"], fmt, cle, en_video)
@@ -645,6 +756,14 @@ def publier(pl: dict):
     c = acces.contraintes().get(p["platform"]) or {}
     if not bac and c.get("posts_per_day") and _sortis_24h(m["id"], p["platform"]) >= c["posts_per_day"]:
         raise file.Reessayer("plafond quotidien du réseau atteint", dans=dt.timedelta(hours=3))
+    from . import conditions
+    verdict = conditions.verifier(p)
+    if verdict == "attendre":
+        raise file.Reessayer("condition de publication pas encore mesurable", dans=dt.timedelta(hours=3))
+    if verdict:
+        _maj(db.posts, p["id"], status="annule", error=f"condition non remplie : {verdict}")
+        journal.noter("systeme", "condition_non_remplie", "post", p["id"], m["id"], apres={"raison": verdict})
+        return
     r = _un(db.renditions, p["rendition_id"])
     info = _info_rendu(r)
     lien = _un(db.links, p["link_id"]) if p["link_id"] else None

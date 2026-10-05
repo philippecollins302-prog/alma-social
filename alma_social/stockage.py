@@ -52,7 +52,7 @@ def ranger_original(octets: bytes, extension: str) -> tuple:
     """→ (chemin relatif, sha256). Écrit une seule fois."""
     sha = hashlib.sha256(octets).hexdigest()
     ext = (extension or "jpg").lower().lstrip(".")
-    if ext not in ("jpg", "jpeg", "png", "heic", "heif", "webp"):
+    if ext not in ("jpg", "jpeg", "png", "heic", "heif", "webp", "mp4", "mov", "m4v", "webm"):
         ext = "jpg"
     rel = pathlib.Path("originaux") / sha[:2] / f"{sha}.{ext}"
     chemin = racine() / rel

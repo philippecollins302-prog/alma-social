@@ -282,6 +282,8 @@ def gabarit(marque: dict, lecture: dict, plateforme: str, pilier: dict | None, c
         evenement = _phrase(ctx.get("sujet proposé") or ctx["étape"])
         if ctx.get("annonce") and str(ctx["étape"]).startswith("J-"):
             evenement += f" Rendez-vous le {ctx['annonce']}."
+    if not evenement and ctx.get("temps fort"):
+        evenement = _phrase(ctx["temps fort"])
     ctas = v.get("cta") or (["Écris-nous"] if tu else ["Contactez-nous"])
     cta = _choix(ctas, graine).rstrip(".!")
     cta2 = _choix(ctas, graine + "2").rstrip(".!")

@@ -1,0 +1,34 @@
+{
+  "_lisez_moi": "Les temps forts de l'année (§ 13.3). Chaque ligne pose un créneau à sa date (ou quelques jours avant), avec sa consigne, pour les marques nommées. Une date incertaine n'est PAS écrite : les salons de l'habitat et du BTP de Montpellier, Marseille et Perpignan attendent leurs dates officielles (`a_confirmer`). Aucune prise de parole politique, religieuse ou dramatique.",
+  "temps_forts": [
+    {"cle": "noel", "nom": "Fin d'année", "date": "12-22", "marques": ["alma", "rega", "vipplus", "lms", "lms-paca"],
+     "consigne": "Merci de fin d'année, sobre : l'équipe, une réalisation de l'année, les horaires d'hiver. Aucune promotion."},
+    {"cle": "noel-sazu", "nom": "Noël", "date": "12-23", "marques": ["sazu"],
+     "consigne": "Le bowl qui réchauffe avant les fêtes ; les horaires de la semaine de Noël s'ils changent (sinon ne rien dire des horaires)."},
+    {"cle": "voeux", "nom": "Vœux", "date": "01-05", "marques": ["alma", "rega", "vipplus", "lms", "lms-paca"],
+     "consigne": "Les vœux de l'année : une phrase, une photo d'équipe ou de chantier. Pas de bilan chiffré non vérifié."},
+    {"cle": "bilan", "nom": "L'année en images", "date": "12-17", "marques": ["alma", "rega"],
+     "consigne": "LinkedIn : trois réalisations de l'année, ce qu'elles ont demandé. Uniquement des faits de la fiche."},
+    {"cle": "saint-valentin", "nom": "Saint-Valentin", "date": "02-12", "marques": ["sazu"],
+     "consigne": "Deux bowls, deux salsas : suave pour l'un, fuego pour l'autre. Ton complice, jamais mièvre."},
+    {"cle": "printemps-sols", "nom": "Les travaux de printemps", "date": "03-16", "marques": ["lms", "lms-paca"],
+     "consigne": "Le bon moment pour refaire un sol ou rafraîchir un logement : délais, préparation, devis."},
+    {"cle": "clim-ete", "nom": "Avant les chaleurs", "date": "05-12", "marques": ["vipplus"],
+     "consigne": "Entretien et mise en service de la climatisation avant l'été : pourquoi maintenant, comment réserver."},
+    {"cle": "chauffage-hiver", "nom": "Avant l'hiver", "date": "10-13", "marques": ["vipplus"],
+     "consigne": "Révision du chauffage et des pompes à chaleur avant les premiers froids."},
+    {"cle": "fete-musique", "nom": "Fête de la musique", "date": "06-19", "marques": ["sazu"],
+     "consigne": "Un bowl à emporter pour la Fête de la musique à Montpellier ; commander avant la foule."},
+    {"cle": "rentree", "nom": "La rentrée", "date": "09-01", "marques": ["sazu", "lms", "lms-paca", "rega", "vipplus", "alma"],
+     "consigne": "La rentrée : ce qui reprend, les créneaux de l'automne, le recrutement s'il y en a un (fiche)."},
+    {"cle": "sols-fetes", "nom": "Un sol neuf avant les fêtes", "date": "11-09", "marques": ["lms"],
+     "consigne": "Les derniers créneaux de pose avant les fêtes : réserver maintenant."}
+  ],
+  "a_confirmer": [
+    "Salon de l'habitat de Montpellier (dates officielles à relever)",
+    "Salon de l'habitat de Marseille",
+    "Salon de l'habitat de Perpignan",
+    "Salons BTP régionaux (Occitanie, PACA)",
+    "Événements de Boutonnet et de Montpellier (fête de quartier, marchés)"
+  ]
+}

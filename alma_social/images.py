@@ -287,6 +287,13 @@ def fenetre(img: Image.Image, ratio: float, sujet=None):
     return (x0, y0, x0 + cw, y0 + ch)
 
 
+def resserrer(sujet, facteur: float = 0.72):
+    """La boîte du sujet resserrée autour de son centre (un plan plus serré)."""
+    x0, y0, x1, y1 = [float(v) for v in (sujet or [0.15, 0.15, 0.85, 0.85])]
+    cx, cy, w, h = (x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) * facteur, (y1 - y0) * facteur
+    return [max(0.0, cx - w / 2), max(0.0, cy - h / 2), min(1.0, cx + w / 2), min(1.0, cy + h / 2)]
+
+
 def recadrer(img: Image.Image, fmt: str, sujet=None) -> Image.Image:
     tw, th = FORMATS[fmt]
     box = fenetre(img, tw / th, sujet)

@@ -110,9 +110,39 @@ def utc(instant_paris: dt.datetime) -> dt.datetime:
     return instant_paris.astimezone(dt.timezone.utc).replace(tzinfo=None)
 
 
+def sept_meilleurs(secteur: str, reseau: str, profil: dict | None = None) -> list:
+    """Les sept meilleurs créneaux de la semaine pour une marque sur un réseau
+    [Sprout ViralPost] : notés sur 100 (le meilleur = 100), au plus deux par
+    jour et à trois heures d'écart au moins — sept fois le même lundi midi
+    n'apprendrait rien. → [{jour, minute, heure, note, appris}]."""
+    tous = sorted(((poids(secteur, reseau, j, mi, profil), j, mi)
+                   for j in range(7) for mi in range(DEBUT, FIN + 1, 30)), reverse=True)
+    pris = []
+    for w, j, mi in tous:
+        du_jour = [x for x in pris if x[1] == j]
+        if len(du_jour) >= 2 or any(abs(x[2] - mi) < 180 for x in du_jour):
+            continue
+        pris.append((w, j, mi))
+        if len(pris) == 7:
+            break
+    haut = pris[0][0] if pris else 1.0
+    return [{"jour": j, "minute": mi, "heure": f"{mi // 60:02d}:{mi % 60:02d}", "note": round(100 * w / haut),
+             "appris": bool((profil or {}).get(cle(j, mi // 60)))} for w, j, mi in sorted(pris, key=lambda x: (x[1], x[2]))]
+
+
+PART_EXPLORATION = 0.2          # 80 % sur les meilleurs créneaux, 20 % pour apprendre
+
+
+def explorer(graine: str) -> bool:
+    """Une publication sur cinq part sur une heure moins sûre, pour apprendre.
+    Tirage déterministe (la même publication, rejouée, garde son heure)."""
+    import hashlib
+    return int(hashlib.sha256(graine.encode()).hexdigest()[:8], 16) % 100 < PART_EXPLORATION * 100
+
+
 def choisir_heure(secteur: str, reseau: str, jour: dt.date, occupes: list, soeurs: list,
                   profil: dict | None = None, apres: dt.datetime | None = None,
-                  heure_imposee: str = ""):
+                  heure_imposee: str = "", exploration: bool = False):
     """→ l'heure (Paris, avec fuseau) la meilleure de ce jour, ou None.
 
     `occupes` : instants déjà pris par la MÊME marque sur le MÊME réseau ;
@@ -120,6 +150,17 @@ def choisir_heure(secteur: str, reseau: str, jour: dt.date, occupes: list, soeur
     pas tout à la même minute) ; `apres` : rien avant (maintenant + marge).
     """
     meilleur, choix = -1.0, None
+    plafond = None
+    if exploration and not heure_imposee:
+        # Exploration : la meilleure heure PEU CONNUE du jour (moins de deux
+        # observations), parmi celles qui valent au moins 45 % de la meilleure.
+        # On apprend sans jeter une publication dans le vide.
+        haut = max(poids(secteur, reseau, jour.weekday(), mi, profil) for mi in range(DEBUT, FIN + 1, PAS))
+        # L'apprentissage se fait PAR HEURE : on écarte l'heure entière des pics.
+        connues = {mi // 60 for mi in range(DEBUT, FIN + 1, PAS)
+                   if ((profil or {}).get(cle(jour.weekday(), mi // 60)) or {}).get("n", 0) >= 2
+                   or poids(secteur, reseau, jour.weekday(), mi, profil) >= 0.75 * haut}
+        plafond = (0.45 * haut, {mi for mi in range(DEBUT - 60, FIN + 1, PAS) if mi // 60 in connues})
     if heure_imposee:
         h, m = (int(x) for x in heure_imposee.split(":"))
         candidats = [h * 60 + m + d for d in (0, 30, 60, 90, -30)]
@@ -136,10 +177,14 @@ def choisir_heure(secteur: str, reseau: str, jour: dt.date, occupes: list, soeur
         if any(abs(t - s) < DECALAGE_SOEURS for s in soeurs):
             continue
         w = 1.0 if heure_imposee else poids(secteur, reseau, jour.weekday(), minute, profil)
+        if plafond and (w < plafond[0] or minute in plafond[1]):
+            continue
         if w > meilleur:
             meilleur, choix = w, t
         if heure_imposee:
             break
+    if choix is None and plafond:
+        return choisir_heure(secteur, reseau, jour, occupes, soeurs, profil, apres, heure_imposee, False)
     return choix
 
 

@@ -11,7 +11,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/static/icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icone-192.png">
-<link rel="stylesheet" href="/static/app.css?v=4">
+<link rel="stylesheet" href="/static/app.css?v=5">
 </head>
 <body>
 <!-- La porte : un code personnel, rien d'autre. -->
@@ -39,11 +39,13 @@
   <!-- Déposer : la photo, une phrase si on veut, la marque. -->
   <main id="v-deposer" class="vue">
     <label class="objectif" id="choisir">
-      <input id="fichiers" type="file" accept="image/*" multiple hidden>
+      <input id="fichiers" type="file" accept="image/*,video/*" multiple hidden>
       <span class="viseur" aria-hidden="true"></span>
       <span id="choisir-texte" class="objectif-texte">Prendre ou choisir des photos</span>
       <span class="objectif-conseil" id="conseil">Lumière du jour, le sujet au centre, téléphone stable.</span>
     </label>
+    <button class="secondaire large viseur-bouton" id="ouvrir-viseur" type="button">◎ Viseur guidé — grille et conseils en direct</button>
+    <div id="brief-coach"></div>
     <div id="apercus" class="apercus"></div>
     <div class="dictee" id="dictee" hidden>
       <button class="micro" id="micro" type="button" aria-label="Dicter une phrase">🎙</button>
@@ -87,20 +89,33 @@
   <form method="dialog"><button class="secondaire large">Fermer</button></form>
 </dialog>
 
+<section id="viseur" class="viseur-ecran" hidden>
+  <video id="viseur-video" playsinline muted autoplay></video>
+  <div class="viseur-grille" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="viseur-haut"><button class="viseur-fermer" id="viseur-fermer" aria-label="Fermer">✕</button>
+    <div id="viseur-brief" class="viseur-brief"></div></div>
+  <div id="viseur-conseil" class="viseur-conseil" aria-live="polite"></div>
+  <div class="viseur-bas"><span id="viseur-compte" class="viseur-compte"></span>
+    <button class="viseur-declencheur" id="viseur-declencher" aria-label="Prendre la photo"></button>
+    <button class="viseur-fini" id="viseur-fini">Terminé</button></div>
+  <canvas id="viseur-mesure" width="64" height="64" hidden></canvas>
+</section>
+
 <dialog id="dialogue"><div id="dialogue-corps"></div><form method="dialog"><button class="secondaire large">Fermer</button></form></dialog>
 
-<script src="/static/js/attente.js?v=4"></script>
-<script src="/static/js/socle.js?v=4"></script>
-<script src="/static/js/deposer.js?v=4"></script>
-<script src="/static/js/aujourdhui.js?v=4"></script>
-<script src="/static/js/calendrier.js?v=4"></script>
-<script src="/static/js/boite.js?v=4"></script>
-<script src="/static/js/resultats.js?v=4"></script>
-<script src="/static/js/demander.js?v=4"></script>
-<script src="/static/js/studio.js?v=4"></script>
-<script src="/static/js/marques.js?v=4"></script>
-<script src="/static/js/sante.js?v=4"></script>
-<script src="/static/js/reglages.js?v=4"></script>
-<script src="/static/js/demarrage.js?v=4"></script>
+<script src="/static/js/attente.js?v=5"></script>
+<script src="/static/js/socle.js?v=5"></script>
+<script src="/static/js/deposer.js?v=5"></script>
+<script src="/static/js/viseur.js?v=5"></script>
+<script src="/static/js/aujourdhui.js?v=5"></script>
+<script src="/static/js/calendrier.js?v=5"></script>
+<script src="/static/js/boite.js?v=5"></script>
+<script src="/static/js/resultats.js?v=5"></script>
+<script src="/static/js/demander.js?v=5"></script>
+<script src="/static/js/studio.js?v=5"></script>
+<script src="/static/js/marques.js?v=5"></script>
+<script src="/static/js/sante.js?v=5"></script>
+<script src="/static/js/reglages.js?v=5"></script>
+<script src="/static/js/demarrage.js?v=5"></script>
 </body>
 </html>

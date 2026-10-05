@@ -193,4 +193,31 @@ egal((envois[-1][0], envois[-1][1]), ("/upload", ["video"]), "Reel : /upload ave
 egal(envois[-1][3].get("media_type"), "REELS", "Instagram : media_type REELS")
 verifier(abs(r1["duree"] - 9.2) < 0.2, f"la vraie durée du Reel est connue ({r1['duree']} s)")
 
+print("— La déclinaison totale : une prise, tous les formats")
+with db.moteur().begin() as c:
+    c.execute(update(db.assets).where(db.assets.c.id == rega[0]).values(status="banque"))
+j = studio.fabriquer("declinaison", "rega", [rega[0]], {"titre": "Un sol posé en deux jours"})
+egal(j["statut"], "fait", "fabriquée")
+tailles = {}
+for f, s_ in zip(j["fichiers"], j["sortie"]["fichiers"]):
+    r = pipeline._info_rendu(pipeline._un(db.renditions, f["rendition_id"]))
+    tailles[s_["cle"]] = (r["largeur"], r["hauteur"])
+egal(tailles, {"carre": (1080, 1080), "portrait": (1080, 1350), "story": (1080, 1920), "linkedin": (1200, 627),
+               "miniature": (1280, 720), "google": (1200, 900)}, "six formats, aux tailles des réseaux")
+verifier(all(s_["nom"] for s_ in j["sortie"]["fichiers"]), "chaque format dit à quoi il sert")
+mini = images.ouvrir(stockage.chemin(pipeline._un(db.renditions, j["fichiers"][4]["rendition_id"])["path"]))
+lin = images.ouvrir(stockage.chemin(pipeline._un(db.renditions, j["fichiers"][3]["rendition_id"])["path"]))
+gauche = np.asarray(mini.crop((40, 200, 600, 520))).std()
+verifier(gauche > 20, "la miniature YouTube porte son titre (zone de gauche contrastée)")
+try:
+    studio.fabriquer("declinaison", "rega", rega[:2], {})
+    verifier(False, "deux photos : refusé")
+except ValueError:
+    verifier(True, "une déclinaison part d'une seule photo")
+try:
+    studio.fabriquer("declinaison", "rega", [rega[0]], {"studio": True})
+    verifier(False, "fond studio refusé à REGA, même en déclinaison")
+except studio.RegleHonnetete:
+    verifier(True, "fond studio refusé à REGA, même en déclinaison")
+
 socle.fin()

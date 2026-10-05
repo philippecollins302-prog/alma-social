@@ -6,7 +6,8 @@
  * réseau par réseau, heure — sans rien publier. */
 "use strict";
 
-const NOMS_MONTAGE = { reel: "Reel", carrousel: "Carrousel", avant_apres: "Avant / après", rideau: "Rideau avant/après" };
+const NOMS_MONTAGE = { reel: "Reel", carrousel: "Carrousel", avant_apres: "Avant / après", rideau: "Rideau avant/après",
+  clip: "Clip tiré d'une vidéo", declinaison: "Tous les formats" };
 const NOMS_RESEAU = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", gbp: "Google", linkedin: "LinkedIn",
   youtube: "YouTube", pinterest: "Pinterest", threads: "Threads", linkedin_perso: "LinkedIn perso" };
 
@@ -31,19 +32,24 @@ async function vueStudio() {
       </section>`).join("");
     camps.forEach(x => chargerRepetition(x.id, false));
     $("#st-travaux").innerHTML = t.travaux.map(travail).join("")
-      || '<div class="vide"><b>Aucun montage encore.</b>Déposez trois photos SAZÚ d\'un coup : le studio en fait un Reel et un carrousel.</div>';
+      || '<div class="vide"><b>Aucun montage encore.</b>Déposez trois photos SAZÚ d\'un coup : le studio en fait un Reel et un carrousel. Une vidéo de chantier donne jusqu\'à cinq clips.</div>';
   } catch (err) { $("#st-travaux").innerHTML = `<p class="erreur">${esc(err.message)}</p>`; }
 }
 
 function travail(j) {
   const f = j.fichiers || [];
-  const media = j.type === "reel" || j.type === "rideau"
+  const media = j.type === "reel" || j.type === "rideau" || j.type === "clip"
     ? f.map(x => `<video controls playsinline preload="none" poster="${esc(x.url.replace(/\.mp4$/, ".jpg"))}" src="${esc(x.url)}"></video>`).join("")
-    : `<div class="bande">${f.map(x => `<img alt="" loading="lazy" src="${esc(x.url)}">`).join("")}</div>`;
+    : j.type === "declinaison"
+      ? `<div class="bande">${f.map((x, i) => { const s = (j.sortie.fichiers || [])[i] || {};
+          return `<figure><a href="${esc(x.url)}" download="${esc(s.cle || "format")}.jpg"><img alt="" src="${esc(x.url)}"></a>
+            <figcaption class="petit doux">${esc(s.nom || "")}<br>${esc(s.taille || "")}</figcaption></figure>`; }).join("")}</div>`
+      : `<div class="bande">${f.map(x => `<img alt="" loading="lazy" src="${esc(x.url)}">`).join("")}</div>`;
   const params = (j.sortie || {}).params || {};
   return `<article class="carte montage">
       <div class="ligne"><span>${puce(j.brand_id)}<b>${esc(NOMS_MONTAGE[j.type] || j.type)}</b>
-        <span class="doux petit">· ${(j.asset_ids || []).length} photo${(j.asset_ids || []).length > 1 ? "s" : ""}${params.auto ? " · automatique" : ""}</span></span>
+        <span class="doux petit">· ${j.type === "clip" ? `${Math.round(params.debut || 0)}–${Math.round(params.fin || 0)} s de la vidéo · potentiel ${j.score ?? "—"}/100`
+          : `${(j.asset_ids || []).length} photo${(j.asset_ids || []).length > 1 ? "s" : ""}`}${params.auto ? " · automatique" : ""}</span></span>
         <span class="petit ${j.statut === "fait" ? "ok" : j.statut === "echec" ? "erreur" : "doux"}">${esc({ fait: "prêt", echec: "échec", attente: "en cours" }[j.statut] || j.statut)}</span></div>
       ${j.statut === "echec" ? `<p class="petit erreur">${esc(j.erreur)}</p>` : media}
       ${params.accroche || params.titre ? `<p class="petit">« ${esc(params.accroche || params.titre)} »</p>` : ""}
@@ -103,6 +109,7 @@ async function fabriquerMontage() {
       <option value="reel">Reel (mouvements, sous-titres, fin sur l'appel)</option>
       <option value="avant_apres">Avant / après en image (2 photos : avant puis après)</option>
       <option value="rideau">Avant / après en vidéo (2 photos)</option>
+      <option value="declinaison">Tous les formats (1 photo : carré, portrait, story, LinkedIn, miniature YouTube, Google)</option>
     </select>
     <input id="mt-accroche" class="champ" maxlength="80" placeholder="L'accroche, écrite sur la première image">
     <button class="large" id="mt-go">Fabriquer</button>`);

@@ -495,6 +495,18 @@ def fabriquer(type_: str, marque_id: str, asset_ids: list, params: dict | None =
                 fichiers.append({"rendition_id": _ranger(jid, asset_ids[0], 0, (racine / rel).read_bytes(), rel,
                                                          True, faits, info["duree"]),
                                  "video": True, "duree": info["duree"]})
+        elif type_ == "declinaison":
+            if len(photos) != 1:
+                raise ValueError("une déclinaison part d'une seule photo")
+            faits = list(tous_faits)
+            for i, (cle, nom, taille, fmt_h, img) in enumerate(declinaison_totale(
+                    photos[0], m, p.get("titre") or p.get("accroche") or "", avec_logo, sujets[0]), 1):
+                rel = f"{dossier}/{cle}.jpg"
+                octets = images.enregistrer_jpeg(img, racine / rel, 90)
+                fichiers.append({"rendition_id": _ranger(jid, asset_ids[0], i, octets, rel, False, faits),
+                                 "video": False, "cle": cle, "nom": nom, "taille": f"{taille[0]}×{taille[1]}"})
+            faits += [f"{len(fichiers)} formats d'une seule prise", "recadrage sur le sujet à chaque format",
+                      "habillage à la charte par format"]
         else:
             raise ValueError(f"type inconnu : {type_}")
         with db.moteur().begin() as c:
@@ -511,10 +523,57 @@ def fabriquer(type_: str, marque_id: str, asset_ids: list, params: dict | None =
     return travail(jid)
 
 
+# ── La déclinaison totale : une prise, tous les formats ─────────────────
+# (clé, nom lisible, taille en pixels, format d'habillage le plus proche)
+DECLINAISONS = [
+    ("carre", "Carré — Instagram, Facebook", (1080, 1080), "1:1"),
+    ("portrait", "Portrait 4:5 — fil Instagram", (1080, 1350), "4:5"),
+    ("story", "Story 9:16 — Instagram, Facebook, WhatsApp", (1080, 1920), "9:16"),
+    ("linkedin", "LinkedIn — lien et fil", (1200, 627), "16:9"),
+    ("miniature", "Miniature YouTube", (1280, 720), "16:9"),
+    ("google", "Fiche Google — publication", (1200, 900), "4:3"),
+]
+
+
+def declinaison_totale(photo: Image.Image, m: dict, titre: str = "", avec_logo: bool = True, sujet=None) -> list:
+    """→ [(clé, nom, taille, format, image)] : chaque format recadré sur le
+    sujet (jamais un étirement), habillé à la charte. La miniature YouTube
+    porte le titre en grand — c'est elle qu'on clique ; les autres non, le
+    texte vit dans la légende."""
+    kit = m.get("kit") or {}
+    out = []
+    for cle, nom, (tw, th), fmt in DECLINAISONS:
+        img = photo.crop(images.fenetre(photo, tw / th, sujet)).resize((tw, th), Image.LANCZOS)
+        if cle == "miniature" and titre:
+            img = _titre_miniature(img, m, titre)
+        img, _ = images.habiller(img, kit, m["name"], fmt, avec_logo)
+        out.append((cle, nom, (tw, th), fmt, img))
+    return out
+
+
+def _titre_miniature(img: Image.Image, m: dict, titre: str) -> Image.Image:
+    c = images.couleurs(m.get("kit") or {})
+    W, H = img.size
+    voile = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    dv = ImageDraw.Draw(voile)
+    for x in range(round(W * 0.62)):
+        dv.line([(x, 0), (x, H)], fill=c["encre"] + (int(185 * (1 - x / (W * 0.62)) ** 1.2),))
+    img = Image.alpha_composite(img.convert("RGBA"), voile)
+    d = ImageDraw.Draw(img)
+    titre_p, _, _ = _polices(m)
+    pt = images._police(titre_p, 92 if len(titre) < 24 else 72, 800)
+    lignes = images._lignes(titre, pt, round(W * 0.55))[:3]
+    y = (H - len(lignes) * 100) // 2
+    for ligne in lignes:
+        d.text((56, y), ligne, font=pt, fill=(255, 255, 255), stroke_width=4, stroke_fill=c["encre"])
+        y += 100
+    return img.convert("RGB")
+
+
 def potentiel(type_: str, n: int, p: dict) -> int:
     """Une estimation grossière et ASSUMÉE comme telle, en attendant les
     mesures de la marque (§ 11.2) : elle sert à départager, jamais à bloquer."""
-    base = {"reel": 70, "carrousel": 64, "rideau": 72, "avant_apres": 66}.get(type_, 50)
+    base = {"reel": 70, "carrousel": 64, "rideau": 72, "avant_apres": 66, "declinaison": 55}.get(type_, 50)
     base += 6 if p.get("accroche") or p.get("titre") else 0
     base += min(8, 2 * max(0, n - 2))
     return min(95, base)
@@ -531,6 +590,17 @@ def travail(jid: int) -> dict:
     return j
 
 
+def travail_par_ref(ref: str) -> dict | None:
+    """Un travail réussi déjà fait sous cette référence (`video:12:clip3`) — la
+    reprise d'un découpage interrompu ne refait pas ce qui est fait."""
+    with db.moteur().connect() as c:
+        for j in db.lignes(c.execute(select(db.media_jobs).where(db.media_jobs.c.type == "clip",
+                                                                 db.media_jobs.c.statut == "fait"))):
+            if (j["sortie"] or {}).get("ref") == ref:
+                return j
+    return None
+
+
 def travaux(marque_ids: list, limite: int = 30) -> list:
     with db.moteur().connect() as c:
         ids = [r[0] for r in c.execute(select(db.media_jobs.c.id).where(db.media_jobs.c.brand_id.in_(marque_ids))
@@ -545,6 +615,17 @@ RAFALE_FENETRE_H = 3              # reçues dans ces heures-là
 # Instagram pousse les Reels hors des abonnés), le carrousel là où on lit.
 MONTAGE_PAR_RESEAU = {"instagram": "reel", "tiktok": "reel", "youtube": "reel",
                       "facebook": "carrousel", "linkedin": "carrousel"}
+# Un clip tiré d'une vraie vidéo passe avant un Reel fabriqué de photos là où
+# la vidéo porte ; Facebook et LinkedIn le prennent s'il n'y a pas de carrousel.
+PREFERENCES = {"instagram": ("clip", "reel"), "tiktok": ("clip", "reel"), "youtube": ("clip", "reel"),
+               "facebook": ("carrousel", "clip"), "linkedin": ("carrousel", "clip")}
+
+
+def montage_pour(plateforme: str, montages: dict) -> dict | None:
+    for t in PREFERENCES.get(plateforme, ()):
+        if t in montages:
+            return montages[t]
+    return None
 
 
 def _vrai_sujet(a: dict) -> str:
@@ -575,7 +656,7 @@ def rafale(marque_id: str, par: str = "studio") -> dict:
             db.assets.c.brand_id == m["id"], db.assets.c.kind == "photo", db.assets.c.status == "banque",
             db.assets.c.created_at >= depuis).order_by(db.assets.c.usability.desc(), db.assets.c.id)))
     deja = {i for j in travaux([m["id"]], 60) for i in (j["asset_ids"] or [])}
-    photos = [a for a in photos if a["id"] not in deja][:6]
+    photos = [a for a in photos if a["id"] not in deja and not (a.get("client_ref") or "").startswith("video:")][:6]
     if len(photos) < RAFALE_MIN:
         return {"fait": False, "raison": f"{len(photos)} photo(s) : il en faut {RAFALE_MIN}"}
     ids = [a["id"] for a in photos]
