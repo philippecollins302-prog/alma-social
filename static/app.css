@@ -277,3 +277,7 @@ body.sans-defilement { overflow: hidden; }
 .puces-heures { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .puce-heure { font-size: 13px; padding: 4px 8px; border-radius: 999px; background: color-mix(in srgb, var(--or) calc(var(--n) * 0.35%), var(--carte2)); }
 .puce-heure i { font-style: normal; font-size: 11px; color: var(--doux); margin-left: 5px; }
+/* Résultats : décisions du lundi, terrain, carnet */
+.decision { border-top: 1px solid var(--trait); padding-top: 8px; margin-top: 8px; }
+.decision .actions { align-items: center; }
+details.terrain h3, details.carnet h3 { font-size: 15px; margin: 14px 0 6px; }

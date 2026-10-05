@@ -8,7 +8,9 @@ les autres, et sa trace va dans les journaux et sur la page santé.
   chaque minute     réponses aux avis dues, échéances de pause
   toutes les 30 min commentaires et messages ; toutes les heures, les avis
   chaque jour 6 h   le tour du matin du planificateur (Paris)
-  le lundi 8 h      le récapitulatif
+  chaque jour 7 h   l'Analyste : carnet d'apprentissage, conclusions des tests A/B
+  le lundi 8 h      la note du lundi ; à midi, ses décisions non refusées s'appliquent
+  toutes les 30 min les pics de messages (avec d'où ils viennent)
   chaque nuit 3 h   le ménage de la file
 """
 from __future__ import annotations
@@ -65,7 +67,7 @@ def echeances_de_pause():
 
 
 def un_tour(maintenant_s: float, compteur: dict):
-    from . import planificateur, rapport, relation
+    from . import analyste, planificateur, rapport, relation
     file.vider(limite=20)
     if maintenant_s - compteur.get("minute", 0) >= 60:
         compteur["minute"] = maintenant_s
@@ -73,10 +75,13 @@ def un_tour(maintenant_s: float, compteur: dict):
         _tache("pauses", echeances_de_pause)
         _une_fois_par_jour("tour_du_matin", 6, lambda: planificateur.tour_du_matin())
         _une_fois_par_jour("rapport_lundi_envoye", 8, lambda: rapport.envoyer(), jour_semaine=0)
+        _une_fois_par_jour("decisions_lundi", 12, lambda: analyste.appliquer_decisions_dues(), jour_semaine=0)
+        _une_fois_par_jour("analyste", 7, lambda: analyste.tour())
         _une_fois_par_jour("menage", 3, file.menage)
     if maintenant_s - compteur.get("commentaires", 0) >= 1800:
         compteur["commentaires"] = maintenant_s
         _tache("commentaires", lambda: [relation.relever(m) for m in acces.marques()])
+        _tache("pics", lambda: [analyste.pic_de_mentions(m) for m in acces.marques()])
     if maintenant_s - compteur.get("avis", 0) >= 3600:
         compteur["avis"] = maintenant_s
         _tache("avis", lambda: [relation.relever_avis(m) for m in acces.marques()])

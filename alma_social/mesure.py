@@ -94,7 +94,7 @@ def appareil(agent: str) -> str:
     return "ordinateur"
 
 
-def noter_clic(code: str, agent: str, referent: str, ip: str, ville: str = ""):
+def noter_clic(code: str, agent: str, referent: str, ip: str, ville: str = "", source: str = "lien"):
     """→ le lien (dict) ou None. Les robots d'aperçu (Facebook, Slack…)
     ouvrent chaque lien : ils sont consignés mais ne comptent pas comme clics."""
     with db.moteur().begin() as c:
@@ -105,7 +105,7 @@ def noter_clic(code: str, agent: str, referent: str, ip: str, ville: str = ""):
         c.execute(insert(db.clicks).values(
             link_id=l["id"], at=db.maintenant(), city=ville[:120], device=sorte,
             referrer=(referent or "")[:500], marker=code,
-            ip_hash=hashlib.sha256((ip or "").encode()).hexdigest()[:32]))
+            ip_hash=hashlib.sha256((ip or "").encode()).hexdigest()[:32], source=source))
         if sorte != "robot":
             c.execute(update(db.links).where(db.links.c.id == l["id"]).values(clicks=db.links.c.clicks + 1))
     return l

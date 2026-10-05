@@ -230,6 +230,37 @@ rend carré, portrait, story, LinkedIn, miniature YouTube et fiche Google.
 de chaque réseau, la réserve de la banque (secondes chances, gagnants,
 intemporels) et les temps forts à venir.
 
+## Mesurer jusqu'au client
+
+**Résultats** montre d'abord les clients, par marque et par source, ce qu'ils
+rapportent quand le montant est connu, et ce que ça coûte (IA + publicité).
+Sous chaque marque : les décisions de la semaine (Oui / Non), ce que le carnet
+a appris, le test A/B en cours, et le **terrain** :
+
+- **QR codes** — un par support (panneau de chantier, camion, flyer, sac de
+  livraison), à télécharger en SVG pour l'imprimeur. Chaque scan est compté.
+- **Codes promo** — un par réseau ou par créateur ; l'offre est la vôtre.
+- **Rapports de livraison** (SAZÚ) — l'export CSV de la semaine, depuis
+  l'espace restaurant Uber Eats ou Deliveroo, importé tel quel.
+
+**Brancher le site d'une marque, côté serveur** (à l'abri des bloqueurs) :
+poser `SOCIAL_CONVERSIONS_SECRET` chez l'hébergeur, donner la même valeur au
+développeur du site, qui envoie à chaque demande :
+
+    POST <adresse de l'application>/api/conversions
+    X-Alma-Signature: sha256=<HMAC-SHA256 du corps avec le secret>
+    {"marque": "rega", "type": "devis", "id": "<id de la demande>",
+     "marqueur": "<valeur du champ alma_marqueur>", "montant": 12400}
+
+**Brancher les numéros tracés** : choisir un fournisseur qui délivre des
+numéros français et prévient par webhook à la fin de chaque appel (par
+exemple Invox ou Wannaspeak), poser `SOCIAL_APPELS_SECRET`, et lui donner
+l'adresse `<application>/api/appels/entrant?jeton=<le secret>`. Chaque
+numéro se déclare ensuite avec sa source (google, panneau, camion…).
+
+**Le lundi à 8 h**, la note arrive par courriel ; ses décisions s'appliquent à
+midi sauf « Non ». Une dépense n'est jamais appliquée seule.
+
 ## Pour aller plus loin
 
 - `DECISIONS.md` — chaque choix technique, en une ligne, avec sa raison ;

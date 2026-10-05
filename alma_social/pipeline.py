@@ -485,6 +485,13 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
         # Une réalisation : seul le clip (des images réelles, coupées, jamais
         # retouchées) la porte ; les montages du studio restent aux produits.
         montages = {t: j for t, j in montages.items() if t == "clip"}
+    from . import ab
+    test = ab.assigner(m["id"], peut_monter=bool(montages))
+    if test:
+        if test["consigne"]:
+            contexte["test A/B en cours"] = test["consigne"]
+        if test["variable"] == "format" and test["nom"] == "photo":
+            montages = {}               # la variante « photo seule » du test de format
     if montages:
         choix = {pf: studio.montage_pour(pf, montages) for pf in retenus}
         contexte["format"] = "selon le réseau : " + " ; ".join(
@@ -555,7 +562,8 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
                        prompt_version=t["prompt_version"],
                        guard_report={"violations": [], "essais": t["essais"], "traitements": rendu["traitements"],
                                      "critique": t.get("critique"),
-                                     "creneau": "impose" if imposee else ("exploration" if explore else "meilleur")})
+                                     "creneau": "impose" if imposee else ("exploration" if explore else "meilleur"),
+                                     "ab": {"experience": test["experience"], "variante": test["nom"]} if test else None})
         lien = mesure.liens_de_publication(m, pid, pf)
         texte = redaction.poser_lien(t["texte"], pf, lien["url"])
         texte = redaction.ajouter_mentions(texte, m, (cts.get(pf) or {}).get("caption_max"))
@@ -571,6 +579,8 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
             file.ajouter("publier", {"post_id": pid}, quand=creneaux.utc(heure), dedup=f"publier:{pid}",
                          essais_max=10)
         crees.append(pid)
+    if test and crees:
+        ab.enregistrer(test["experience"], test["nom"], crees)
     with db.moteur().begin() as c:
         vals = {"status": "programme", "last_used_at": db.maintenant()}
         if crees and a.get("recyclage") == "seconde_chance":
@@ -920,6 +930,9 @@ def mesurer(pl: dict):
     except NonBranche:
         return
     mesure.enregistrer_mesures(p["id"], pl["jalon"], m)
+    if pl["jalon"] in ("1h", "24h") and not m.simulated:
+        from . import analyste
+        analyste.emballement(p["id"])
     if pl["jalon"] == "7j" and not m.simulated:
         score = creneaux.score_engagement(vars(m))
         with db.moteur().begin() as c:

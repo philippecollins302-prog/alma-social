@@ -2,22 +2,22 @@
  * qu'on puisse déposer des photos dans un sous-sol de chantier. Les photos
  * elles-mêmes attendent dans IndexedDB (attente.js), pas ici.
  * Monter VERSION à chaque changement d'un fichier de SHELL. */
-const VERSION = "alma-social-5";
-const SHELL = ["/", "/static/app.css?v=5",
-               "/static/js/attente.js?v=5",
-               "/static/js/socle.js?v=5",
-               "/static/js/deposer.js?v=5",
-               "/static/js/viseur.js?v=5",
-               "/static/js/aujourdhui.js?v=5",
-               "/static/js/calendrier.js?v=5",
-               "/static/js/boite.js?v=5",
-               "/static/js/resultats.js?v=5",
-               "/static/js/demander.js?v=5",
-               "/static/js/studio.js?v=5",
-               "/static/js/marques.js?v=5",
-               "/static/js/sante.js?v=5",
-               "/static/js/reglages.js?v=5",
-               "/static/js/demarrage.js?v=5",
+const VERSION = "alma-social-6";
+const SHELL = ["/", "/static/app.css?v=6",
+               "/static/js/attente.js?v=6",
+               "/static/js/socle.js?v=6",
+               "/static/js/deposer.js?v=6",
+               "/static/js/viseur.js?v=6",
+               "/static/js/aujourdhui.js?v=6",
+               "/static/js/calendrier.js?v=6",
+               "/static/js/boite.js?v=6",
+               "/static/js/resultats.js?v=6",
+               "/static/js/demander.js?v=6",
+               "/static/js/studio.js?v=6",
+               "/static/js/marques.js?v=6",
+               "/static/js/sante.js?v=6",
+               "/static/js/reglages.js?v=6",
+               "/static/js/demarrage.js?v=6",
                "/static/fonts/ArchivoBlack-Regular.ttf", "/static/fonts/DMSans.ttf",
                "/static/icone.svg", "/static/icone-192.png", "/manifest.webmanifest"];
 

@@ -306,6 +306,7 @@ clicks = Table(
     Column("referrer", Text, default=""),
     Column("marker", String(40), default=""),
     Column("ip_hash", String(64), default=""),
+    Column("source", String(10), default="lien"),        # lien | qr (le QR ajoute ?q=1)
 )
 
 leads = Table(
@@ -326,6 +327,53 @@ leads = Table(
     Column("qualification", JSON, default=dict),          # besoin, ville, délai, budget, contact
     Column("entry_door", String(20), default=""),         # commentaire | message | qr | chat | formulaire
     Column("first_reply_s", Integer, nullable=True),      # délai de première réponse, en secondes
+    # v3 J4 : l'identifiant chez la source (commande Uber Eats, appel, conversion
+    # serveur) — un même événement reçu deux fois ne compte qu'une fois.
+    Column("external_id", String(120), default=""),
+    Column("promo_code", String(40), default=""),
+    Column("created_at", DateTime, default=maintenant),
+)
+
+tracking_numbers = Table(
+    "tracking_numbers", meta,                            # un numéro d'appel par marque et par source
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("brand_id", String(40), nullable=False),
+    Column("numero", String(20), unique=True, nullable=False),   # E.164 : +33…
+    Column("source", String(40), default=""),            # google | instagram | panneau-chantier | camion…
+    Column("fournisseur", String(40), default=""),
+    Column("renvoi_vers", String(20), default=""),       # le vrai numéro (affiché masqué)
+    Column("actif", Boolean, default=True),
+    Column("created_at", DateTime, default=maintenant),
+)
+
+promo_codes = Table(
+    "promo_codes", meta,                                 # un code par publication, réseau ou créateur
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("brand_id", String(40), nullable=False),
+    Column("code", String(40), unique=True, nullable=False),
+    Column("post_id", Integer, nullable=True),
+    Column("platform", String(20), default=""),
+    Column("createur", String(120), default=""),
+    Column("offre", Text, default=""),                   # l'offre décidée par une personne, jamais inventée
+    Column("utilisations", Integer, default=0),
+    Column("chiffre", Float, default=0.0),
+    Column("actif", Boolean, default=True),
+    Column("created_at", DateTime, default=maintenant),
+)
+
+decisions = Table(
+    "decisions", meta,                                   # les décisions proposées par le lundi
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("brand_id", String(40), nullable=True),
+    Column("semaine", String(10), nullable=False),       # 2026-10-05 (le lundi)
+    Column("type", String(20), nullable=False),          # cadence | pilier | format | budget
+    Column("phrase", Text, nullable=False),
+    Column("pourquoi", Text, default=""),
+    Column("parametres", JSON, default=dict),
+    Column("auto", Boolean, default=True),               # False : une dépense, une personne décide
+    Column("statut", String(12), default="proposee"),    # proposee | refusee | appliquee | a_decider
+    Column("par", String(120), default=""),
+    Column("decide_le", DateTime, nullable=True),
     Column("created_at", DateTime, default=maintenant),
 )
 

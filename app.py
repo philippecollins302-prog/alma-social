@@ -33,7 +33,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTe
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import desc, func, select, update
 
-from alma_social import (acces, agents, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, coach, conditions, recyclage, temps_forts, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
+from alma_social import (ab, acces, agents, analyste, carnet, conversions, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, coach, conditions, recyclage, temps_forts, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
                          mesure, pipeline, planificateur, rapport, relation, reseaux, securite, stockage)
 from alma_social.publieurs import upload_post
 from alma_social.publieurs.base import ErreurPublication
@@ -69,12 +69,17 @@ async def _vie(_app):
 app = FastAPI(title="ALMA SOCIAL", docs_url=None, redoc_url=None, openapi_url=None, lifespan=_vie)
 
 
+# Les portes que des machines extérieures appellent : chacune porte sa propre
+# garde (rien à lire pour le formulaire, signature HMAC, jeton du fournisseur).
+PORTES_EXTERIEURES = ("/api/leads/web", "/api/conversions", "/api/appels/entrant")
+
+
 @app.middleware("http")
 async def _entetes(request: Request, appel):
     """Les écritures de l'API exigent l'en-tête `X-Alma` : un formulaire d'un
     autre site ne peut pas le poser (CSRF), notre écran le pose toujours."""
     if request.method in ("POST", "PUT", "DELETE") and request.url.path.startswith("/api/") \
-            and not request.url.path.startswith("/api/leads/web") and request.headers.get("x-alma") != "1":
+            and not request.url.path.startswith(PORTES_EXTERIEURES) and request.headers.get("x-alma") != "1":
         return JSONResponse({"erreur": "requête refusée"}, status_code=403)
     reponse = await appel(request)
     reponse.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -698,8 +703,57 @@ def tableau(request: Request, marque: str = "", jours: int = 30):
                     "stock": planificateur.stock(m), "piliers_oublies": planificateur.piliers_en_retard(m),
                     "semaine": planificateur.nb_publications_semaine(i, acces.aujourdhui()),
                     "cadence": [m["cadence_min"], m["cadence_max"]], "veille": relation.veille(m),
-                    "en_pause": acces.en_pause(m)})
+                    "en_pause": acces.en_pause(m), "valeur": analyste.valeur(m, jours),
+                    "objectif": rapport.objectif(i), "lecons": carnet.lecons(i, 3),
+                    "decisions": [d for d in analyste.lister(i) if d["statut"] in ("proposee", "a_decider")][:3],
+                    "test": ab.actif(i)})
     return _json({"jours": jours, "marques": out, "bac_a_sable": journal.bac_a_sable()})
+
+
+@app.post("/api/decisions/{decision_id}")
+async def trancher_decision(decision_id: int, request: Request):
+    """Oui ou non à une décision du lundi. Sans réponse, elle s'applique à midi."""
+    u = _moi(request)
+    with db.moteur().begin() as c:
+        d = db.ligne(c.execute(select(db.decisions).where(db.decisions.c.id == decision_id)))
+    if not d or not securite.peut_voir(u, d["brand_id"]):
+        raise HTTPException(404, "Décision inconnue.")
+    if d["type"] == "budget":
+        _pdg(u)                                 # une dépense : le PDG seul
+    try:
+        return _json(analyste.trancher(decision_id, bool((await request.json()).get("oui")), _qui(u)))
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.post("/api/marque/{marque_id}/objectif")
+async def poser_objectif(marque_id: str, request: Request):
+    u = _moi(request)
+    _pdg(u)
+    m = _voir(u, marque_id)
+    n = (await request.json()).get("clients")
+    n = int(n) if str(n or "").isdigit() else None
+    journal.ecrire(f"objectif:{m['id']}", str(n) if n else "")
+    return _json({"objectif": n})
+
+
+@app.get("/api/carnet")
+def lire_carnet(request: Request, marque: str):
+    u = _moi(request)
+    m = _voir(u, marque)
+    return _json({"lecons": carnet.lecons(m["id"], 30, toutes=True), "tests": ab.liste([m["id"]]),
+                  "variables": {k: v["hypothese"] for k, v in ab.VARIABLES.items()}})
+
+
+@app.post("/api/ab")
+async def lancer_test(request: Request):
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque", ""))
+    try:
+        return _json(ab.lancer(m, c_.get("variable", ""), _qui(u), (c_.get("hypothese") or "")[:300]))
+    except ValueError as e:
+        raise HTTPException(409, str(e))
 
 
 @app.post("/api/leads")
@@ -719,9 +773,9 @@ async def lead_manuel(request: Request):
 
 # ── Les routes publiques de la mesure ────────────────────────────────────
 @app.get("/go/{code}")
-def lien_trace(code: str, request: Request):
+def lien_trace(code: str, request: Request, q: str = ""):
     l = mesure.noter_clic(code, request.headers.get("user-agent", ""), request.headers.get("referer", ""),
-                          _ip(request))
+                          _ip(request), source="qr" if q == "1" else "lien")
     if not l:
         return HTMLResponse(_page("Lien expiré", "<p>Ce lien n'existe plus.</p>"), status_code=404)
     return RedirectResponse(mesure.cible_avec_marqueur(l), status_code=302)
@@ -815,6 +869,120 @@ async def lead_web(request: Request):
     mesure.enregistrer_lead(mid, type_ if type_ in ("devis", "commande", "appel") else "devis", "formulaire",
                             marqueur=str(form.get("marqueur", ""))[:40], source=request.headers.get("referer", "")[:300])
     return Response(status_code=204, headers={"Access-Control-Allow-Origin": "*"})
+
+
+# ── J4 : les cinq portes du client ───────────────────────────────────────
+@app.post("/api/conversions")
+async def conversion_serveur(request: Request):
+    """Le SERVEUR du site d'une marque annonce une demande, signée
+    (`X-Alma-Signature: sha256=<hmac du corps>`). À l'abri des bloqueurs."""
+    corps = await request.body()
+    try:
+        r = conversions.conversion_serveur(corps, request.headers.get("x-alma-signature", ""))
+    except PermissionError as e:
+        raise HTTPException(401, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return _json(r)
+
+
+@app.post("/api/appels/entrant")
+async def appel_entrant(request: Request, jeton: str = ""):
+    """Le webhook du fournisseur de numéros tracés (JSON ou formulaire)."""
+    try:
+        d = await request.json()
+    except Exception:
+        d = dict(await request.form())
+    try:
+        r = conversions.appel_entrant(d if isinstance(d, dict) else {},
+                                      jeton or request.headers.get("x-alma-jeton", ""))
+    except PermissionError as e:
+        raise HTTPException(401, str(e))
+    return _json(r)
+
+
+@app.get("/api/terrain")
+def terrain(request: Request, marque: str = ""):
+    """Les QR codes, les numéros tracés et les codes promo des marques visibles."""
+    u = _moi(request)
+    ids = [_voir(u, marque)["id"]] if marque else securite.marques_de(u)
+    with db.moteur().begin() as c:
+        nums = db.lignes(c.execute(select(db.tracking_numbers).where(db.tracking_numbers.c.brand_id.in_(ids))))
+        appels = dict(c.execute(select(db.leads.c.source, func.count()).where(
+            db.leads.c.brand_id.in_(ids), db.leads.c.channel == "telephone").group_by(db.leads.c.source)).all())
+    return _json({
+        "qr": conversions.liens_terrain(ids),
+        "numeros": [{"id": n["id"], "marque": n["brand_id"], "numero": n["numero"], "source": n["source"],
+                     "fournisseur": n["fournisseur"], "actif": n["actif"], "appels": appels.get(n["source"], 0)}
+                    for n in nums],
+        "codes": [{k: x[k] for k in ("id", "brand_id", "code", "platform", "createur", "offre", "utilisations",
+                                     "chiffre", "post_id", "actif")} for x in conversions.codes(ids)],
+        "branche": {"conversions": bool(conversions.secret_conversions()), "appels": bool(conversions.secret_appels())},
+    })
+
+
+@app.post("/api/terrain/qr")
+async def creer_qr(request: Request):
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque", ""))
+    try:
+        return _json(conversions.lien_terrain(m, c_.get("support", ""), (c_.get("cible") or "")[:500], _qui(u)))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/qr/{code}.{sorte}")
+def image_qr(code: str, sorte: str, request: Request):
+    u = _moi(request)
+    with db.moteur().begin() as c:
+        l = db.ligne(c.execute(select(db.links).where(db.links.c.code == code)))
+    if not l or not securite.peut_voir(u, l["brand_id"]) or sorte not in ("svg", "png"):
+        raise HTTPException(404, "QR inconnu.")
+    coul = images.couleurs((acces.marque(l["brand_id"]) or {}).get("kit") or {})["encre"]
+    return Response(conversions.qr(code, sorte, "#%02x%02x%02x" % coul),
+                    media_type="image/svg+xml" if sorte == "svg" else "image/png",
+                    headers={"Content-Disposition": f'inline; filename="qr-{code}.{sorte}"'})
+
+
+@app.post("/api/terrain/numero")
+async def poser_numero(request: Request):
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque", ""))
+    try:
+        return _json({"id": conversions.poser_numero(m, c_.get("numero", ""), c_.get("source", ""),
+                                                     c_.get("fournisseur", ""), c_.get("renvoi", ""), _qui(u))})
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception:
+        raise HTTPException(409, "Ce numéro est déjà posé.")
+
+
+@app.post("/api/terrain/code")
+async def creer_code(request: Request):
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque", ""))
+    try:
+        return _json(conversions.creer_code(m, c_.get("offre", ""), c_.get("post_id"), c_.get("reseau", ""),
+                                            c_.get("createur", ""), c_.get("code", ""), _qui(u)))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/livraisons/import")
+async def import_livraisons(request: Request, marque: str = Form(...), plateforme: str = Form(...),
+                            fichier: UploadFile = File(...)):
+    u = _moi(request)
+    m = _voir(u, marque)
+    octets = await fichier.read()
+    if len(octets) > 10 * 1024 * 1024:
+        raise HTTPException(400, "Fichier trop lourd (10 Mo maximum).")
+    try:
+        return _json(conversions.importer_livraisons(m, plateforme, octets, _qui(u)))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ── Les comptes des réseaux ──────────────────────────────────────────────
