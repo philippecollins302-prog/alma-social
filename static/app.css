@@ -281,3 +281,16 @@ body.sans-defilement { overflow: hidden; }
 .decision { border-top: 1px solid var(--trait); padding-top: 8px; margin-top: 8px; }
 .decision .actions { align-items: center; }
 details.terrain h3, details.carnet h3 { font-size: 15px; margin: 14px 0 6px; }
+
+/* J5 — la crise, les prospects, les délais */
+.crise { background: color-mix(in srgb, var(--alerte) 12%, transparent); border: 2px solid var(--alerte);
+  border-radius: var(--rayon); padding: 12px 14px; margin: 10px 0; }
+.crise textarea { margin-top: 6px; }
+.crise-bouton { width: 100%; margin-top: 10px; padding: 12px; border-radius: var(--rayon); border: 2px solid var(--alerte);
+  background: transparent; color: var(--alerte); font: inherit; font-weight: 700; }
+.prospect.chaud { border-left: 6px solid var(--alerte); }
+.prospect.tiede { border-left: 6px solid var(--attention); }
+.prospect.froid { border-left: 6px solid var(--doux, #999); }
+.prospect a.gros { display: block; text-align: center; text-decoration: none; margin: 8px 0; }
+.delais { margin: 8px 0 4px; }
+details[data-reputation] h3 { margin: 18px 0 6px; }

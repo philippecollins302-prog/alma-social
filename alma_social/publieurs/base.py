@@ -133,6 +133,12 @@ class Publisher:
     def reply(self, target_id: str, text: str) -> None:
         raise NotImplementedError
 
+    def private_reply(self, comment_id: str, text: str) -> None:
+        """Répondre à un commentaire par un MESSAGE PRIVÉ (§ 15.2). Seule l'API
+        officielle de Meta le permet (« private replies ») ; tant qu'elle n'est
+        pas branchée, l'application répond en public et le dit au journal."""
+        raise NonBranche("message privé non disponible par ce branchement")
+
     def delete(self, external_id: str) -> bool:
         """Retirer une publication. → False si le réseau ne le permet pas par
         API (Instagram, TikTok, Threads) : l'application le dit, elle ne

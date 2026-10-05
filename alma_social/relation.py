@@ -25,7 +25,7 @@ import re
 from pydantic import BaseModel, Field
 from sqlalchemy import func, insert, select, update
 
-from . import acces, alertes, db, garde_fous, ia, journal, reseaux
+from . import acces, alertes, crise, db, garde_fous, ia, journal, mesure, reseaux
 from .publieurs.base import ErreurPublication
 
 log = logging.getLogger("alma_social.relation")
@@ -34,6 +34,14 @@ CATEGORIES = ("question", "compliment", "devis", "plainte", "vip", "indesirable"
 SANS_REPONSE = {"plainte", "vip", "indesirable", "autre"}
 AVEC_ALERTE = {"devis", "plainte", "vip"}
 FENETRE_COMMENTAIRES = dt.timedelta(days=14)
+FENETRE_CHAUDE = dt.timedelta(hours=48)     # relevée toutes les 5 min : c'est là que tombent les « DEVIS »
+# La valeur commerciale (§ 15.1) : ce qu'un message peut rapporter, de 0 à 3.
+VALEUR = {"devis": 3, "vip": 3, "plainte": 2, "question": 1, "compliment": 0, "autre": 0, "indesirable": 0}
+# Les délais visés (§ 15.1), jour et nuit — mesurés et affichés dans la boîte.
+OBJECTIFS_S = {"question": 15 * 60, "devis": 5 * 60}
+# Commentaire → message (§ 15.2) : le mot qui ouvre une conversation, par marque.
+DECLENCHEURS = {"rega": ("DEVIS", "qualifier"), "vipplus": ("DEVIS", "qualifier"), "lms": ("DEVIS", "qualifier"),
+                "lms-paca": ("DEVIS", "qualifier"), "sazu": ("BOWL", "commander")}
 
 
 class Classement(BaseModel):
@@ -93,7 +101,7 @@ def classer(m: dict, auteur: str, texte: str, abonnes: int | None = None, platef
             Classement, max_tokens=1500, usage="relation")
         d = obj.model_dump()
         d["modele"] = modele
-    except ia.SansCle:
+    except ia.ErreurIA:             # sans clé, ou modèle en panne : les règles prudentes
         d = _classer_sans_modele(m, texte)
     if d["categorie"] not in CATEGORIES:
         d["categorie"] = "autre"
@@ -160,10 +168,13 @@ def _sure(m: dict, texte: str, plateforme: str) -> str:
 
 
 # ── Commentaires ─────────────────────────────────────────────────────────
-def relever(m: dict) -> int:
-    """Va chercher les nouveaux commentaires des publications des 14 derniers jours."""
+def relever(m: dict, fenetre: dt.timedelta = FENETRE_COMMENTAIRES) -> int:
+    """Va chercher les nouveaux commentaires des publications récentes : celles
+    des 48 dernières heures toutes les cinq minutes (c'est là que tombent les
+    demandes, et le devis se prend en charge en moins de cinq minutes), celles
+    des 14 derniers jours toutes les demi-heures."""
     from . import pipeline
-    depuis = db.maintenant() - FENETRE_COMMENTAIRES
+    depuis = db.maintenant() - fenetre
     with db.moteur().begin() as c:
         posts = db.lignes(c.execute(select(db.posts).where(
             db.posts.c.brand_id == m["id"], db.posts.c.status == "publie",
@@ -182,6 +193,74 @@ def relever(m: dict) -> int:
     return n
 
 
+def responsable(m: dict, categorie: str = "") -> str:
+    """À qui revient ce message : le responsable de la marque ; le PDG s'il n'y
+    en a pas. Une plainte ou un gros compte : le responsable, le PDG en copie."""
+    with db.moteur().connect() as c:
+        gens = db.lignes(c.execute(select(db.users).where(db.users.c.active.is_(True))))
+    resp = [u["name"] for u in gens if u["role"] == "responsable" and m["id"] in (u["brands"] or [])]
+    nom = resp[0] if resp else "PDG"
+    if categorie in ("plainte", "vip") and resp:
+        nom += " (copie PDG)"
+    return nom[:120]
+
+
+def mot_declencheur(m: dict, texte: str) -> str | None:
+    """« DEVIS » sous une publication REGA : → « qualifier ». Le mot doit être
+    là en entier, dans un message court — « pas besoin de devis, merci » en
+    six mots déclencherait, une phrase de vingt ne déclenche pas."""
+    d = DECLENCHEURS.get(m["id"])
+    if not d:
+        return None
+    mots = re.findall(r"[a-z0-9]+", garde_fous._sans_accents((texte or "").lower()))
+    if d[0].lower() in mots and len(mots) <= 6 and not ({"pas", "non", "plus"} & set(mots)):
+        return d[1]
+    return None
+
+
+def _lien_conversation(m: dict, post_id, plateforme: str, action: str) -> str | None:
+    """Le lien que reçoit celui qui a écrit le mot : la conversation qui qualifie,
+    ou (SAZÚ) la commande. Un seul lien tracé par publication et par réseau."""
+    from . import config
+    sorte = "chat" if action == "qualifier" else "commande"
+    l_ = m.get("links") or {}
+    if action == "qualifier":
+        cible = f"{config.url_publique()}/parler/{m['id']}"
+    else:
+        cible = l_.get("uber_eats") or l_.get("deliveroo") or l_.get("site") or ""
+        if not cible:
+            return None             # pas de lien de commande renseigné : on ne promet rien
+    with db.moteur().connect() as c:
+        deja = db.ligne(c.execute(select(db.links).where(
+            db.links.c.brand_id == m["id"], db.links.c.post_id == post_id, db.links.c.platform == plateforme,
+            db.links.c.kind == sorte)))
+    lien = deja or mesure.creer_lien(m, post_id, plateforme, sorte, cible)
+    return mesure.url_courte(lien["code"])
+
+
+def _code_du_jour(m: dict) -> dict | None:
+    """Le code promo actif le plus récent de la marque — l'offre est celle qu'une
+    personne a écrite (`conversions.creer_code`), jamais inventée ici."""
+    with db.moteur().connect() as c:
+        return db.ligne(c.execute(select(db.promo_codes).where(
+            db.promo_codes.c.brand_id == m["id"], db.promo_codes.c.actif.is_(True))
+            .order_by(db.promo_codes.c.id.desc()).limit(1)))
+
+
+def texte_declencheur(m: dict, action: str, auteur: str, lien: str) -> str:
+    prenom = (auteur or "").split(" ")[0].lstrip("@")
+    tu = (m.get("voice") or {}).get("address") == "tu"
+    if action == "commander":
+        code = _code_du_jour(m)
+        t = f"Hello {prenom} ! Ta commande, c'est par ici 👉 {lien}" if prenom else f"Ta commande, c'est par ici 👉 {lien}"
+        if code:
+            t += f" — code {code['code']} : {code['offre']}"
+        return t
+    if tu:
+        return (f"Merci {prenom} ! " if prenom else "Merci ! ") + f"Quelques questions rapides pour ton devis : {lien}"
+    return (f"Merci {prenom} ! " if prenom else "Merci ! ") + f"Pour votre devis, quelques questions rapides ici : {lien}"
+
+
 def recevoir(m: dict, plateforme: str, external_id: str, auteur: str, texte: str, post_id=None,
              kind: str = "commentaire", meta: dict | None = None) -> int:
     """→ 1 si le message est nouveau. Il est classé, répondu ou signalé, et tout est au journal."""
@@ -189,64 +268,136 @@ def recevoir(m: dict, plateforme: str, external_id: str, auteur: str, texte: str
         if c.execute(select(db.conversations.c.id).where(db.conversations.c.external_id == external_id)).first():
             return 0
     meta = meta or {}
-    d = classer(m, auteur, texte, meta.get("followers"), plateforme)
+    m = acces.marque(m["id"]) or m             # l'état de crise peut avoir changé depuis le début du relevé
+    en_crise = crise.en_crise(m)
+    action = mot_declencheur(m, texte) if kind == "commentaire" and not en_crise else None
+    lien = _lien_conversation(m, post_id, plateforme, action) if action else None
+    if action and lien:
+        d = {"categorie": "devis", "urgence": 2, "raison": f"mot « {DECLENCHEURS[m['id']][0]} » sous la publication",
+             "reponse": "", "modele": "declencheur"}
+    else:
+        d = classer(m, auteur, texte, meta.get("followers"), plateforme)
+        if action:
+            d["raison"] += " — mot déclencheur, mais aucun lien de commande renseigné"
+    if en_crise:
+        d["reponse"] = ""
+        d["raison"] += " — marque en crise : aucune réponse automatique"
     with db.moteur().begin() as c:
         cid = c.execute(insert(db.conversations).values(
             brand_id=m["id"], platform=plateforme, kind=kind, external_id=external_id, post_id=post_id,
             author=auteur[:200], author_meta=meta, text=texte, category=d["categorie"], urgency=d["urgence"],
-            status="masque" if d["categorie"] == "indesirable" else "nouveau",
+            value=VALEUR.get(d["categorie"], 0), assigned_to=responsable(m, d["categorie"]),
+            status="masque" if d["categorie"] == "indesirable" else ("alerte" if en_crise else "nouveau"),
             received_at=db.maintenant())).inserted_primary_key[0]
     journal.noter("systeme", "message_recu", "conversation", cid, m["id"],
                   apres={"reseau": plateforme, "categorie": d["categorie"], "raison": d["raison"],
                          "modele": d.get("modele")})
-    if d["reponse"] and d["categorie"] not in SANS_REPONSE:
+    if action and lien:
+        repondre(cid, texte_declencheur(m, action, auteur, lien), par="ia", prive=True)
+    elif d["reponse"] and d["categorie"] not in SANS_REPONSE:
         repondre(cid, d["reponse"], par="ia")
-    if d["categorie"] in AVEC_ALERTE:
-        sujet = {"devis": "demande de devis", "plainte": "PLAINTE", "vip": "message important"}[d["categorie"]]
+    # Un « BOWL » est une commande en route, pas une urgence : pas d'alerte pour lui.
+    if (d["categorie"] in AVEC_ALERTE and action != "commander") or (en_crise and d["categorie"] != "indesirable"):
+        sujet = {"devis": "demande de devis", "plainte": "PLAINTE", "vip": "message important"}.get(
+            d["categorie"], "message (marque en crise)")
+        deja_repondu = bool(action and lien) or (d["categorie"] == "devis" and d["reponse"])
         alertes.alerter(f"{m['name']} — {sujet} sur {reseaux.NOMS.get(plateforme, plateforme)}",
                         f"De : {auteur}\n\n« {texte[:1500]} »\n\n"
-                        + ("Une première réponse est partie pour ne pas laisser la personne en plan.\n"
-                           if d["categorie"] == "devis" else "AUCUNE réponse automatique n'est partie.\n")
-                        + "Ouvrez la boîte d'ALMA SOCIAL pour répondre.",
-                        marque=m["id"], niveau="urgent", type_=d["categorie"], dedup=f"conv:{cid}")
+                        + ("Le lien de qualification est parti : la fiche suivra.\n" if action and lien else
+                           "Une première réponse est partie pour ne pas laisser la personne en plan.\n"
+                           if deja_repondu else "AUCUNE réponse automatique n'est partie.\n")
+                        + f"À traiter par : {responsable(m, d['categorie'])}. Ouvrez la boîte d'ALMA SOCIAL.",
+                        marque=m["id"], niveau="urgent" if not action else "info", type_=d["categorie"],
+                        dedup=f"conv:{cid}")
         with db.moteur().begin() as c:
             c.execute(update(db.conversations).where(db.conversations.c.id == cid).values(
-                alert_sent=True, status="alerte" if d["categorie"] != "devis" else "repondu"))
+                alert_sent=True, status="repondu" if deja_repondu else "alerte"))
+    if d["categorie"] == "plainte":
+        crise.surveiller(m)
     return 1
 
 
-def repondre(conversation_id: int, texte: str, par: str = "humain") -> bool:
+def repondre(conversation_id: int, texte: str, par: str = "humain", prive: bool = False) -> bool:
+    """Répondre. `prive` : en message privé si le branchement le permet
+    (commentaire → message) ; sinon la même réponse part en public, et le
+    journal dit laquelle des deux est partie."""
     from . import pipeline
     with db.moteur().begin() as c:
         cv = db.ligne(c.execute(select(db.conversations).where(db.conversations.c.id == conversation_id)))
     if not cv:
         raise ValueError("message inconnu")
     m = acces.marque(cv["brand_id"])
+    voie = "public"
     if journal.bac_a_sable():
         ok, erreur = True, ""
+        voie = "prive" if prive else "public"
     else:
         try:
             p = pipeline.post(cv["post_id"]) if cv["post_id"] else {"platform": cv["platform"], "simulated": False}
             pub = pipeline._publieur(p, acces.compte(m["id"], cv["platform"]))
-            pub.reply(cv["external_id"], texte)
+            if prive:
+                try:
+                    pub.private_reply(cv["external_id"], texte)
+                    voie = "prive"
+                except ErreurPublication:
+                    pub.reply(cv["external_id"], texte)
+            else:
+                pub.reply(cv["external_id"], texte)
             ok, erreur = True, ""
         except ErreurPublication as e:
             ok, erreur = False, str(e)
     if ok:
+        maintenant = db.maintenant()
+        vals = dict(reply=texte, replied_by="ia" if par == "ia" else "humain", status="repondu")
+        if not cv.get("replied_at"):
+            vals.update(replied_at=maintenant,
+                        first_reply_s=max(0, int((maintenant - cv["received_at"]).total_seconds())))
         with db.moteur().begin() as c:
-            c.execute(update(db.conversations).where(db.conversations.c.id == conversation_id).values(
-                reply=texte, replied_by="ia" if par == "ia" else "humain", status="repondu"))
+            c.execute(update(db.conversations).where(db.conversations.c.id == conversation_id).values(**vals))
     journal.noter(par, "reponse" if ok else "reponse_echec", "conversation", conversation_id, m["id"],
-                  apres={"texte": texte, "erreur": erreur, "simulee": journal.bac_a_sable()})
+                  apres={"texte": texte, "erreur": erreur, "voie": voie, "simulee": journal.bac_a_sable()})
     return ok
 
 
+def traiter(conversation_id: int, par: str) -> bool:
+    """« C'est réglé » sans réponse écrite ici (appelé au téléphone, réglé en boutique)."""
+    with db.moteur().begin() as c:
+        n = c.execute(update(db.conversations).where(db.conversations.c.id == conversation_id).values(
+            status="traite")).rowcount
+    journal.noter(par, "message_traite", "conversation", conversation_id)
+    return bool(n)
+
+
+def delais(marque_ids: list, jours: int = 7) -> dict:
+    """Le délai RÉEL de première réponse, par catégorie, contre l'objectif.
+    Un message encore sans réponse au-delà de l'objectif compte comme en retard."""
+    depuis = db.maintenant() - dt.timedelta(days=jours)
+    maintenant = db.maintenant()
+    out = {}
+    with db.moteur().connect() as c:
+        rows = db.lignes(c.execute(select(db.conversations).where(
+            db.conversations.c.brand_id.in_(marque_ids), db.conversations.c.received_at >= depuis,
+            db.conversations.c.category.in_(tuple(OBJECTIFS_S)))))
+    for cat, objectif in OBJECTIFS_S.items():
+        rs = [r for r in rows if r["category"] == cat]
+        faits = sorted(r["first_reply_s"] for r in rs if r["first_reply_s"] is not None)
+        en_attente = [r for r in rs if r["first_reply_s"] is None and r["status"] not in ("traite", "masque")]
+        retard = sum(1 for s_ in faits if s_ > objectif) + sum(
+            1 for r in en_attente if (maintenant - r["received_at"]).total_seconds() > objectif)
+        out[cat] = {"objectif_s": objectif, "messages": len(rs), "repondus": len(faits),
+                    "mediane_s": faits[len(faits) // 2] if faits else None,
+                    "dans_les_temps": (len(rs) - retard) if rs else None, "en_retard": retard}
+    return out
+
+
 def boite(marque_ids: list, limite: int = 200) -> list:
-    """La boîte unique : urgence d'abord, puis le plus récent."""
+    """La boîte unique : l'urgence d'abord, puis ce que le message peut
+    rapporter, puis le plus récent."""
     with db.moteur().begin() as c:
         rows = db.lignes(c.execute(select(db.conversations).where(
             db.conversations.c.brand_id.in_(marque_ids), db.conversations.c.status != "masque")
-            .order_by(db.conversations.c.urgency.desc(), db.conversations.c.received_at.desc()).limit(limite)))
+            .order_by(db.conversations.c.urgency.desc(), db.conversations.c.value.desc(),
+                      db.conversations.c.received_at.desc()).limit(limite)))
     return rows
 
 
@@ -287,6 +438,8 @@ def recevoir_avis(m: dict, external_id: str, note: int, texte: str, auteur: str,
                         f"« {texte[:1500]} »\n\nAucune réponse n'est partie. Un brouillon vous attend dans "
                         f"l'application, à envoyer en un tap :\n\n{brouillon}",
                         marque=m["id"], niveau="urgent", type_="avis", dedup=f"avis:{rid}")
+    if note <= 2:
+        crise.surveiller(acces.marque(m["id"]) or m)
     return 1
 
 
@@ -352,6 +505,8 @@ def repondre_aux_avis_dus() -> int:
             db.reviews.c.reply_due_at <= db.maintenant())))
     n = 0
     for r in dus:
+        if crise.en_crise(acces.marque(r["brand_id"])):
+            continue                # en crise, aucune réponse ne part seule
         if envoyer_reponse_avis(r["id"], r["draft"], par="ia"):
             n += 1
     return n

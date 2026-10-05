@@ -33,7 +33,8 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTe
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import desc, func, select, update
 
-from alma_social import (ab, acces, agents, analyste, carnet, conversions, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, coach, conditions, recyclage, temps_forts, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
+from alma_social import (ab, acces, agents, analyste, carnet, conversions, crise, demandes_avis, lecture_avis, maps,
+                         qualification, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, coach, conditions, recyclage, temps_forts, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
                          mesure, pipeline, planificateur, rapport, relation, reseaux, securite, stockage)
 from alma_social.publieurs import upload_post
 from alma_social.publieurs.base import ErreurPublication
@@ -71,7 +72,7 @@ app = FastAPI(title="ALMA SOCIAL", docs_url=None, redoc_url=None, openapi_url=No
 
 # Les portes que des machines extérieures appellent : chacune porte sa propre
 # garde (rien à lire pour le formulaire, signature HMAC, jeton du fournisseur).
-PORTES_EXTERIEURES = ("/api/leads/web", "/api/conversions", "/api/appels/entrant")
+PORTES_EXTERIEURES = ("/api/leads/web", "/api/conversions", "/api/appels/entrant", "/api/avis/evenement")
 
 
 @app.middleware("http")
@@ -174,6 +175,8 @@ def _fiche_marque(m: dict) -> dict:
             "logo": f"/logo/{m['id']}" if (m.get("kit") or {}).get("logo") else "",
             "en_pause": acces.en_pause(m), "pause_jusqua": m.get("paused_until"),
             "pause_raison": m.get("paused_reason"), "validation": bool(m.get("requires_approval")),
+            "crise": bool(m.get("crisis_since")), "crise_depuis": m.get("crisis_since"),
+            "crise_raison": m.get("crisis_reason"), "crise_brouillon": m.get("crisis_draft") or "",
             "piliers": [{"cle": p["key"], "nom": p["label"], "photo": p.get("photo", "")}
                         for p in m.get("pillars") or []],
             "reseaux": [{"cle": c["platform"], "nom": reseaux.NOMS.get(c["platform"], c["platform"]),
@@ -645,7 +648,35 @@ async def fabriquer_studio(request: Request):
 def boite(request: Request, marque: str = ""):
     u = _moi(request)
     ids = [_voir(u, marque)["id"]] if marque else securite.marques_de(u)
-    return _json({"messages": relation.boite(ids)})
+    return _json({"messages": relation.boite(ids), "delais": relation.delais(ids),
+                  "prospects": _prospects(ids, 20),
+                  "crises": [m["id"] for m in acces.marques() if m["id"] in ids and m.get("crisis_since")]})
+
+
+def _prospects(ids: list, limite: int = 50) -> list:
+    with db.moteur().connect() as c:
+        lids = [r[0] for r in c.execute(select(db.leads.c.id).where(
+            db.leads.c.brand_id.in_(ids), db.leads.c.temperature != "").order_by(desc(db.leads.c.id)).limit(limite))]
+    return [qualification.charge_utile(i) for i in lids]
+
+
+@app.post("/api/boite/{conv_id}/traite")
+def message_traite(conv_id: int, request: Request):
+    """« Réglé » : appelé au téléphone, vu en boutique — il sort de la liste."""
+    u = _moi(request)
+    with db.moteur().begin() as c:
+        cv = db.ligne(c.execute(select(db.conversations).where(db.conversations.c.id == conv_id)))
+    if not cv or not securite.peut_voir(u, cv["brand_id"]):
+        raise HTTPException(404, "Message inconnu.")
+    return _json({"ok": relation.traiter(conv_id, _qui(u))})
+
+
+@app.get("/api/prospects.csv")
+def prospects_csv(request: Request, marque: str = ""):
+    u = _moi(request)
+    ids = [_voir(u, marque)["id"]] if marque else securite.marques_de(u)
+    return Response(qualification.export_csv(ids), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="prospects.csv"'})
 
 
 @app.post("/api/boite/{conv_id}/repondre")
@@ -983,6 +1014,250 @@ async def import_livraisons(request: Request, marque: str = Form(...), plateform
         return _json(conversions.importer_livraisons(m, plateforme, octets, _qui(u)))
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+# ── J5 : la crise ────────────────────────────────────────────────────────
+@app.post("/api/marque/{marque_id}/crise")
+async def declencher_crise(marque_id: str, request: Request):
+    """Le bouton rouge : tout s'arrête pour la marque, un brouillon de prise de parole attend."""
+    u = _moi(request)
+    m = _voir(u, marque_id)
+    try:
+        corps = await request.json()
+    except ValueError:
+        corps = {}
+    return _json(crise.declencher(m, _qui(u), (corps.get("raison") or "déclenché à la main").strip()[:300]))
+
+
+@app.post("/api/marque/{marque_id}/crise/lever")
+def lever_crise(marque_id: str, request: Request):
+    u = _moi(request)
+    return _json(crise.lever(_voir(u, marque_id), _qui(u)))
+
+
+# ── J5 : la réputation ───────────────────────────────────────────────────
+@app.get("/api/reputation")
+def reputation(request: Request, marque: str):
+    """Pour une marque : ce que disent les avis, la position sur Maps, l'audit de la fiche, les demandes d'avis."""
+    u = _moi(request)
+    m = _voir(u, marque)
+    with db.moteur().connect() as c:
+        conc = db.lignes(c.execute(select(db.competitors).where(db.competitors.c.brand_id == m["id"])))
+    return _json({"lecture": lecture_avis.lecture(m), "maps": maps.resume(m), "audit": maps.audit(m),
+                  "fiche": m.get("google_listing") or {}, "requetes": maps.requetes(m),
+                  "place_id": maps.place_id(m), "cle_places": bool(maps.cle()),
+                  "lien_avis": demandes_avis.lien_google(m), "lien_avis_qr": f"{config.url_publique()}/avis/m/{m['id']}",
+                  "demandes": demandes_avis.liste([m["id"]]), "bilan": demandes_avis.bilan(m["id"]),
+                  "concurrents": [{"id": x["id"], "nom": x["name"]} for x in conc]})
+
+
+@app.post("/api/demandes-avis")
+async def demander_avis(request: Request):
+    """« Chantier livré » : la demande d'avis part, à tous, sans tri."""
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque", ""))
+    r = demandes_avis.demander(m, c_.get("evenement") or "pv_chantier", c_.get("nom", ""), c_.get("email", ""),
+                               c_.get("telephone", ""), c_.get("reference", ""), _qui(u))
+    return _json({"id": r["id"], "deja": r.get("deja", False), "canal": r["channel"]})
+
+
+@app.post("/api/avis/evenement")
+async def evenement_avis(request: Request):
+    """Le serveur d'un outil (facturation, caisse) annonce un événement, signé
+    comme les conversions : `X-Alma-Signature: sha256=<hmac du corps>`."""
+    import hmac as _hmac
+    corps = await request.body()
+    secret = conversions.secret_conversions()
+    sig = request.headers.get("x-alma-signature", "").removeprefix("sha256=")
+    if not secret or not _hmac.compare_digest(sig, conversions.signer(corps, secret)):
+        raise HTTPException(401, "signature absente ou fausse")
+    try:
+        d = json.loads(corps)
+    except ValueError:
+        raise HTTPException(400, "JSON illisible")
+    m = acces.marque(str(d.get("marque", ""))[:40])
+    if not m:
+        raise HTTPException(400, "marque inconnue")
+    r = demandes_avis.demander(m, d.get("evenement", ""), d.get("nom", ""), d.get("email", ""),
+                               d.get("telephone", ""), str(d.get("id") or ""), "serveur")
+    return _json({"id": r["id"], "deja": r.get("deja", False)})
+
+
+@app.post("/api/marque/{marque_id}/google")
+async def poser_google(marque_id: str, request: Request):
+    """L'identifiant de la fiche Google (place ID), et la fiche saisie à la main si besoin."""
+    import re as _re
+    u = _moi(request)
+    m = _voir(u, marque_id)
+    c_ = await request.json()
+    if "place_id" in c_:
+        pid = (c_.get("place_id") or "").strip()
+        if pid and not _re.fullmatch(r"[A-Za-z0-9_-]{10,250}", pid):
+            raise HTTPException(400, "Ce n'est pas un identifiant de fiche Google (place ID).")
+        liens = dict(m.get("links") or {})
+        liens["google_place_id"] = pid
+        with db.moteur().begin() as c:
+            c.execute(update(db.brands).where(db.brands.c.id == m["id"]).values(links=liens))
+        journal.noter(_qui(u), "google_place_id", "brand", m["id"], m["id"], apres={"place_id": pid})
+    if isinstance(c_.get("fiche"), dict):
+        f = c_["fiche"]
+        fiche = {"nom": str(f.get("nom", ""))[:200], "adresse": str(f.get("adresse", ""))[:300],
+                 "telephone": str(f.get("telephone", ""))[:30], "site": str(f.get("site", ""))[:300],
+                 "horaires": bool(f.get("horaires")), "photos": int(f.get("photos") or 0),
+                 "categories": [str(x)[:60] for x in (f.get("categories") or [])][:10],
+                 "description": str(f.get("description", ""))[:750], "source": "manuel",
+                 "le": db.maintenant().isoformat(),
+                 "location": (m.get("google_listing") or {}).get("location") or {}}
+        maps.poser_fiche(m, fiche, _qui(u))
+    if isinstance(c_.get("requetes"), list):
+        rq = [str(x).strip()[:120] for x in c_["requetes"] if str(x).strip()][:5]
+        journal.ecrire(f"maps_requetes:{m['id']}", rq, par=_qui(u))
+    return _json({"ok": True})
+
+
+@app.post("/api/maps/releve")
+async def releve_maps(request: Request):
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque", ""))
+    return _json({"id": maps.saisir(m, c_.get("requete", ""), c_.get("position"), _qui(u))})
+
+
+@app.post("/api/concurrents/{cid}/avis")
+async def avis_concurrent(cid: int, request: Request):
+    u = _moi(request)
+    with db.moteur().connect() as c:
+        k = db.ligne(c.execute(select(db.competitors).where(db.competitors.c.id == cid)))
+    if not k or not securite.peut_voir(u, k["brand_id"]):
+        raise HTTPException(404, "Concurrent inconnu.")
+    c_ = await request.json()
+    textes = [t for t in (c_.get("textes") or [c_.get("texte", "")]) if (t or "").strip()][:50]
+    n = sum(1 for t in textes if lecture_avis.ajouter_concurrent(cid, c_.get("note"), t, _qui(u)))
+    return _json({"ajoutes": n})
+
+
+# ── J5 : les routes publiques de la relation ─────────────────────────────
+_OUVERTURES = {}            # ip → [instants] : une page ouverte en boucle ne remplit pas la base
+
+
+def _trop(ip: str, n: int = 20, fenetre: int = 3600) -> bool:
+    maintenant = time.monotonic()
+    l = [t for t in _OUVERTURES.get(ip, []) if maintenant - t < fenetre]
+    l.append(maintenant)
+    _OUVERTURES[ip] = l[-n - 1:]
+    if len(_OUVERTURES) > 5000:
+        _OUVERTURES.clear()
+    return len(l) > n
+
+
+@app.get("/parler/{marque_id}")
+def page_parler(marque_id: str):
+    """La conversation qui qualifie : nom et téléphone d'abord, puis le projet."""
+    m = acces.marque(marque_id)
+    if not m or not m["active"]:
+        raise HTTPException(404, "Marque inconnue.")
+    corps = f"""<h1>{html.escape(m['name'])}</h1><div id="fil" class="fil" aria-live="polite"></div>
+<form id="f" class="saisie"><input id="t" autocomplete="off" maxlength="600" placeholder="Votre réponse" required>
+<button>Envoyer</button></form><p class="petit">Vos réponses ne servent qu'à vous recontacter.</p>
+<script>
+(function(){{var M={json.dumps(m['id'])},k='alma_chat_'+M,fil=document.getElementById('fil'),f=document.getElementById('f'),t=document.getElementById('t');
+var q=new URLSearchParams(location.search);
+function h(x){{var d=document.createElement('div');d.textContent=x;return d.innerHTML}}
+function voir(v){{fil.innerHTML=v.messages.map(function(x){{return '<p class="'+(x.de==='client'?'moi':'eux')+'">'+h(x.texte)+'</p>'}}).join('');
+if(v.fini){{f.style.display='none';fil.insertAdjacentHTML('beforeend','<p><a href="#" id="neuf">Une autre demande ?</a></p>');
+document.getElementById('neuf').onclick=function(e){{e.preventDefault();try{{localStorage.removeItem(k)}}catch(x){{}}f.style.display='';ouvrir()}};}}window.scrollTo(0,document.body.scrollHeight);t.focus();}}
+function api(u,c){{return fetch(u,{{method:c?'POST':'GET',headers:{{'Content-Type':'application/json','X-Alma':'1'}},body:c?JSON.stringify(c):undefined}})
+.then(function(r){{if(!r.ok)throw r;return r.json()}})}}
+var j=null;try{{j=localStorage.getItem(k)}}catch(e){{}}
+function ouvrir(){{return api('/api/chat/ouvrir',{{marque:M,am:q.get('am')||'',source:q.get('src')||''}}).then(function(v){{j=v.jeton;try{{localStorage.setItem(k,j)}}catch(e){{}}voir(v)}})}}
+(j?api('/api/chat/'+j).then(voir).catch(ouvrir):ouvrir()).catch(function(){{fil.innerHTML='<p class="eux">Le service est momentanément indisponible. Merci de réessayer plus tard.</p>'}});
+f.addEventListener('submit',function(e){{e.preventDefault();var x=t.value.trim();if(!x)return;t.value='';
+api('/api/chat/'+j,{{texte:x}}).then(voir).catch(function(){{t.value=x}})}});}})();
+</script>"""
+    page = _page(m["name"], corps, m).replace("</style>", """.fil p{padding:10px 14px;border-radius:16px;margin:8px 0;max-width:85%}
+.fil .eux{background:rgba(0,0,0,.06)}.fil .moi{background:rgba(0,0,0,.14);margin-left:auto}
+.saisie{display:flex;gap:8px;position:sticky;bottom:0;padding:10px 0}.saisie input{flex:1;font:inherit;padding:14px;border-radius:12px;border:1px solid rgba(0,0,0,.2)}
+.saisie button{font:inherit;font-weight:700;padding:0 18px;border-radius:12px;border:0;background:rgba(0,0,0,.8);color:#fff}
+.petit{font-size:12px;opacity:.7}</style>""")
+    return HTMLResponse(page, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/chat/ouvrir")
+async def chat_ouvrir(request: Request):
+    if _trop(_ip(request)):
+        raise HTTPException(429, "Trop de conversations ouvertes : réessayez dans une heure.")
+    c_ = await request.json()
+    m = acces.marque(str(c_.get("marque", ""))[:40])
+    if not m or not m["active"]:
+        raise HTTPException(404, "Marque inconnue.")
+    ch = qualification.ouvrir(m, "chat", str(c_.get("source") or "")[:100], marqueur=str(c_.get("am") or "")[:40])
+    return _json({**qualification.vue(ch), "jeton": ch["token"]})
+
+
+@app.get("/api/chat/{jeton}")
+def chat_lire(jeton: str):
+    ch = qualification.chat(jeton[:60])
+    if not ch:
+        raise HTTPException(404, "Conversation inconnue.")
+    return _json(qualification.vue(ch))
+
+
+@app.post("/api/chat/{jeton}")
+async def chat_ecrire(jeton: str, request: Request):
+    c_ = await request.json()
+    try:
+        return _json(qualification.repondre(jeton[:60], str(c_.get("texte") or "")))
+    except LookupError:
+        raise HTTPException(404, "Conversation inconnue.")
+
+
+@app.get("/s/chat.js")
+def chat_js(marque: str = ""):
+    """À coller sur le site d'une marque : un bouton « Une question ? » qui ouvre la conversation."""
+    m = acces.marque(marque[:40])
+    if not m:
+        return Response("", media_type="application/javascript")
+    coul = "#%02x%02x%02x" % images.couleurs(m.get("kit") or {})["primaire"]
+    url = qualification.url(m["id"])
+    js = f"""(function(){{var a=document.createElement('a');a.href={json.dumps(url)}+'?src='+encodeURIComponent(location.hostname);
+a.target='_blank';a.rel='noopener';a.textContent={json.dumps("Une question ? Un devis ?" if m.get("sector") != "food" else "Une commande de groupe ?")};
+a.style.cssText='position:fixed;right:16px;bottom:16px;z-index:99999;padding:14px 18px;border-radius:999px;background:{coul};color:#fff;font:600 15px system-ui,sans-serif;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+document.body.appendChild(a);}})();"""
+    return Response(js, media_type="application/javascript", headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/avis/m/{marque_id}")
+def avis_marque(marque_id: str):
+    """Le lien du QR code et de la puce NFC : droit vers la fiche Google."""
+    m = acces.marque(marque_id)
+    if not m:
+        raise HTTPException(404, "Marque inconnue.")
+    lien = demandes_avis.lien_google(m)
+    if not lien:
+        return HTMLResponse(_page(m["name"], f"<h1>{html.escape(m['name'])}</h1><p>Merci ! Notre page d'avis "
+                                             "arrive très bientôt.</p>", m))
+    return RedirectResponse(lien, status_code=302)
+
+
+@app.get("/avis/{jeton}")
+def avis_client(jeton: str):
+    m, lien = demandes_avis.ouvrir(jeton[:60])
+    if not m:
+        return HTMLResponse(_page("Lien expiré", "<p>Ce lien n'existe plus.</p>"), status_code=404)
+    if not lien:
+        return HTMLResponse(_page(m["name"], f"<h1>{html.escape(m['name'])}</h1><p>Merci ! Notre page d'avis "
+                                             "arrive très bientôt.</p>", m))
+    return RedirectResponse(lien, status_code=302)
+
+
+@app.get("/avis/{jeton}/stop")
+def avis_stop(jeton: str):
+    m = demandes_avis.arreter(jeton[:60])
+    if not m:
+        return HTMLResponse(_page("Lien expiré", "<p>Ce lien n'existe plus.</p>"), status_code=404)
+    return HTMLResponse(_page(m["name"], f"<h1>{html.escape(m['name'])}</h1><p>C'est noté : vous ne recevrez "
+                                         "plus ces messages.</p>", m))
 
 
 # ── Les comptes des réseaux ──────────────────────────────────────────────

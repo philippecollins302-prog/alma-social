@@ -81,7 +81,9 @@ function bandeau() {
   const m = ETAT.moi, b = [];
   if (m.arret_general) b.push('<span class="pastille erreur">⛔ Arrêt général</span>');
   if (m.bac_a_sable) b.push('<span class="pastille attention">🧪 Bac à sable</span>');
-  const pauses = ETAT.marques.filter(x => x.en_pause).length;
+  const crises = ETAT.marques.filter(x => x.crise);
+  if (crises.length) b.push(`<span class="pastille erreur">🚨 Crise : ${crises.map(x => esc(x.nom.split(" — ")[0])).join(", ")}</span>`);
+  const pauses = ETAT.marques.filter(x => x.en_pause && !x.crise).length;
   if (pauses) b.push(`<span class="pastille attention">⏸ ${pauses} en pause</span>`);
   $("#bandeau").innerHTML = b.join("");
 }

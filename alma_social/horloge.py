@@ -6,11 +6,14 @@ les autres, et sa trace va dans les journaux et sur la page santé.
 
   toutes les 5 s    la file de travaux (étapes du pipeline, relevés)
   chaque minute     réponses aux avis dues, échéances de pause
+  toutes les 5 min  commentaires des publications de moins de 48 h (les « DEVIS »)
   toutes les 30 min commentaires et messages ; toutes les heures, les avis
+  toutes les heures les conversations interrompues avec un téléphone → une fiche
   chaque jour 6 h   le tour du matin du planificateur (Paris)
   chaque jour 7 h   l'Analyste : carnet d'apprentissage, conclusions des tests A/B
   le lundi 8 h      la note du lundi ; à midi, ses décisions non refusées s'appliquent
-  toutes les 30 min les pics de messages (avec d'où ils viennent)
+  toutes les 30 min les pics de messages (avec d'où ils viennent), la vague négative → mode crise
+  le lundi 5 h      Google Maps : fiche relue, position relevée (seulement avec une clé Places)
   chaque nuit 3 h   le ménage de la file
 """
 from __future__ import annotations
@@ -67,7 +70,7 @@ def echeances_de_pause():
 
 
 def un_tour(maintenant_s: float, compteur: dict):
-    from . import analyste, planificateur, rapport, relation
+    from . import analyste, crise, maps, planificateur, qualification, rapport, relation
     file.vider(limite=20)
     if maintenant_s - compteur.get("minute", 0) >= 60:
         compteur["minute"] = maintenant_s
@@ -78,17 +81,24 @@ def un_tour(maintenant_s: float, compteur: dict):
         _une_fois_par_jour("decisions_lundi", 12, lambda: analyste.appliquer_decisions_dues(), jour_semaine=0)
         _une_fois_par_jour("analyste", 7, lambda: analyste.tour())
         _une_fois_par_jour("menage", 3, file.menage)
+        _une_fois_par_jour("maps", 5, maps.tour, jour_semaine=0)
+    if maintenant_s - compteur.get("chauds", 0) >= 300:
+        compteur["chauds"] = maintenant_s
+        _tache("commentaires_chauds", lambda: [relation.relever(m, relation.FENETRE_CHAUDE) for m in acces.marques()])
     if maintenant_s - compteur.get("commentaires", 0) >= 1800:
         compteur["commentaires"] = maintenant_s
         _tache("commentaires", lambda: [relation.relever(m) for m in acces.marques()])
         _tache("pics", lambda: [analyste.pic_de_mentions(m) for m in acces.marques()])
+        _tache("crise", crise.surveiller_tout)
     if maintenant_s - compteur.get("avis", 0) >= 3600:
         compteur["avis"] = maintenant_s
         _tache("avis", lambda: [relation.relever_avis(m) for m in acces.marques()])
+        _tache("abandons", qualification.abandons)
 
 
 def _boucle():
-    compteur = {"commentaires": time.monotonic() - 1700, "avis": time.monotonic() - 3500}
+    compteur = {"commentaires": time.monotonic() - 1700, "avis": time.monotonic() - 3500,
+                "chauds": time.monotonic() - 240}
     file.relever_les_orphelins()
     while not _arret.is_set():
         try:

@@ -13,7 +13,8 @@ import html
 
 from sqlalchemy import func, select
 
-from . import acces, alertes, carnet, db, journal, mesure, planificateur, relation, reseaux
+from . import (acces, alertes, carnet, db, demandes_avis, journal, lecture_avis, maps, mesure, planificateur,
+               relation, reseaux)
 
 
 def objectif(marque_id: str) -> int | None:
@@ -54,7 +55,24 @@ def fiche(m: dict) -> dict:
         "anomalies": analyste.anomalies(m),
         "decisions": analyste.proposer_decisions(m, semaine.isoformat()),
         "lecons": carnet.lecons(m["id"], 2),
+        "lecture_avis": lecture_avis.lecture(m), "demandes_avis": demandes_avis.bilan(m["id"], 7),
+        "maps": maps.resume(m), "delais": relation.delais([m["id"]]),
+        "prospects": _prospects(m["id"]), "crise": m.get("crisis_since"),
     }
+
+
+def _prospects(marque_id: str) -> dict:
+    sept = db.maintenant() - dt.timedelta(days=7)
+    with db.moteur().connect() as c:
+        return dict(c.execute(select(db.leads.c.temperature, func.count()).where(
+            db.leads.c.brand_id == marque_id, db.leads.c.created_at >= sept, db.leads.c.temperature != "")
+            .group_by(db.leads.c.temperature)).all())
+
+
+def _duree(s) -> str:
+    if s is None:
+        return "—"
+    return f"{s} s" if s < 90 else f"{round(s / 60)} min" if s < 5400 else f"{round(s / 3600)} h"
 
 
 def _pourquoi(o: dict) -> str:
@@ -77,6 +95,10 @@ def _texte(f: dict) -> str:
              f"{pt.get('devis', 0)} devis, {pt.get('commande', 0)} commandes, {pt.get('appel', 0)} appels"
              + (f" ; {ch['clics_commande']} clics vers Uber Eats / Deliveroo" if m.get("sector") == "food" else "")
              + (f" ; {v['chiffre']:.0f} € connus" if v["chiffre"] else "") + ".")
+    if f["prospects"]:
+        pr = f["prospects"]
+        l.append(f"  Prospects qualifiés (7 j) : {pr.get('chaud', 0)} chaud(s), {pr.get('tiede', 0)} tiède(s), "
+                 f"{pr.get('froid', 0)} froid(s).")
     if v["par_reseau"]:
         l.append("  Par source : " + ", ".join(f"{k} {n}" for k, n in list(v["par_reseau"].items())[:5]) + ".")
     l.append("  VICTOIRES :")
@@ -114,12 +136,24 @@ def _texte(f: dict) -> str:
                  f"+{sum(a['abonnes'] for a in f['audience'])} abonnés.")
     l.append(f"  Concurrents : {f['veille']['phrase']}")
     av = f["veille"]["avis"]
-    l.append(f"  Avis : {av['moyenne']} ★ ({av['avis']} avis)." if av["avis"] else "  Avis : aucun relevé.")
-    l.append("  Google Maps : position pas encore relevée.")
+    da = f["demandes_avis"]
+    l.append((f"  Avis : {av['moyenne']} ★ ({av['avis']} avis). " if av["avis"] else "  Avis : aucun relevé. ")
+             + f["lecture_avis"]["phrase"]
+             + (f" Demandes envoyées (7 j) : {da['parties']}, ouvertes : {da['ouvertes']}." if da["demandes"] else ""))
+    if f["lecture_avis"]["idees"]:
+        l.append(f"  Idée de contenu qui répond aux avis : {f['lecture_avis']['idees'][0]}")
+    l.append(f"  Google Maps : {f['maps']['phrase']}")
+    dq, dd = f["delais"]["question"], f["delais"]["devis"]
+    if dq["messages"] or dd["messages"]:
+        l.append(f"  Délai de réponse (7 j) : questions {_duree(dq['mediane_s'])} (objectif 15 min, "
+                 f"{dq['en_retard']} en retard) ; devis {_duree(dd['mediane_s'])} (objectif 5 min, "
+                 f"{dd['en_retard']} en retard).")
     l.append(f"  Stock : {s['banque']} photo(s), {s['jours_couverts']} jour(s) d'avance.")
     l.append(f"  Dépenses 30 j : {v['cout_ia']:.2f} $ d'IA, {v['cout_pub']:.0f} € de publicité"
              + (f" — {v['cout_par_client']:.2f} par client" if v["cout_par_client"] else "") + ".")
-    if f["pause"]:
+    if f["crise"]:
+        l.append("  🚨 MODE CRISE en cours — rien ne part, aucune réponse automatique.")
+    elif f["pause"]:
         l.append("  ⏸ Marque en pause — rien ne repart sans votre action.")
     return "\n".join(l)
 

@@ -75,6 +75,14 @@ brands = Table(
     Column("requires_approval", Boolean, default=False),
     Column("todo", JSON, default=list),                  # ce qui manque encore (valeurs provisoires)
     Column("created_at", DateTime, default=maintenant),
+    # v3 J5 : le mode crise (§ 8 H) — tout s'arrête pour la marque, les
+    # réponses automatiques se taisent, un brouillon de prise de parole attend.
+    Column("crisis_since", DateTime, nullable=True),
+    Column("crisis_reason", Text, nullable=True),
+    Column("crisis_draft", Text, nullable=True),
+    # v3 J5 : la fiche Google telle que relevée (catégories, photos, horaires,
+    # services…) — l'audit (§ 16.4) la lit, il n'invente rien.
+    Column("google_listing", JSON, default=dict),
 )
 
 users = Table(
@@ -425,6 +433,72 @@ conversations = Table(
     Column("alert_sent", Boolean, default=False),
     Column("status", String(20), default="nouveau"),     # nouveau | repondu | alerte | masque | traite
     Column("received_at", DateTime, default=maintenant),
+    # v3 J5 : la boîte unique (§ 15.1) — valeur commerciale, assignation, délai réel
+    Column("value", Integer, default=0),                 # 0 à 3 : ce que ce message peut rapporter
+    Column("assigned_to", String(120), default=""),      # qui doit s'en occuper
+    Column("replied_at", DateTime, nullable=True),
+    Column("first_reply_s", Integer, nullable=True),     # délai de première réponse, mesuré
+)
+
+chats = Table(
+    "chats", meta,                                       # une conversation qui qualifie (§ 15.2, 15.3)
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("brand_id", String(40), nullable=False),
+    Column("token", String(40), unique=True, nullable=False),   # la clé que garde le navigateur
+    Column("entry_door", String(20), default="chat"),    # chat | qr | commentaire | message
+    Column("source", Text, default=""),                  # « panneau Lattes », « Instagram »…
+    Column("post_id", Integer, nullable=True),           # la publication d'origine
+    Column("link_id", Integer, nullable=True),
+    Column("name", String(120), default=""),
+    Column("phone", String(30), default=""),
+    Column("answers", JSON, default=dict),               # champ → réponse
+    Column("messages", JSON, default=list),              # [{de, texte, le}]
+    Column("status", String(12), default="en_cours"),    # en_cours | qualifie | abandonne
+    Column("temperature", String(6), default=""),        # chaud | tiede | froid
+    Column("lead_id", Integer, nullable=True),
+    Column("created_at", DateTime, default=maintenant),
+    Column("updated_at", DateTime, default=maintenant),
+)
+
+review_requests = Table(
+    "review_requests", meta,                             # demander un avis (§ 16.2) : à tous, sans tri
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("brand_id", String(40), nullable=False),
+    Column("event", String(20), nullable=False),         # pv_chantier | facture_payee | commande_livree
+    Column("external_id", String(120), default=""),      # le même événement reçu deux fois : une demande
+    Column("client_name", String(120), default=""),
+    Column("email", String(200), default=""),
+    Column("phone", String(30), default=""),
+    Column("channel", String(6), default="email"),       # email | sms
+    Column("token", String(40), unique=True, nullable=False),
+    Column("sends", JSON, default=list),                 # [{le, rang, ok, erreur}]
+    Column("status", String(12), default="a_envoyer"),   # a_envoyer | envoye | clique | stop | echec
+    Column("clicked_at", DateTime, nullable=True),
+    Column("created_by", String(120), default=""),
+    Column("created_at", DateTime, default=maintenant),
+)
+
+competitor_reviews = Table(
+    "competitor_reviews", meta,                          # leurs avis, collés à la main (§ 16.3)
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("competitor_id", Integer, nullable=False),
+    Column("rating", Integer, nullable=True),
+    Column("text", Text, default=""),
+    Column("fingerprint", String(64), unique=True, nullable=False),
+    Column("created_at", DateTime, default=maintenant),
+)
+
+maps_ranks = Table(
+    "maps_ranks", meta,                                  # la position sur Google Maps, point par point (§ 16.4)
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("brand_id", String(40), nullable=False),
+    Column("query", String(120), nullable=False),
+    Column("lat", Float, nullable=False),
+    Column("lng", Float, nullable=False),
+    Column("rank", Integer, nullable=True),              # None : absent des 20 premiers
+    Column("source", String(20), default="places"),      # places | manuel
+    Column("week", String(10), nullable=False),          # le lundi de la semaine
+    Column("created_at", DateTime, default=maintenant),
 )
 
 reviews = Table(

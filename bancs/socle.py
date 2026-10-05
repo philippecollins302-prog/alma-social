@@ -19,7 +19,8 @@ sys.path.insert(0, str(ICI.parent))
 _TMP = tempfile.mkdtemp(prefix="alma-social-banc-")
 for cle in ("ANTHROPIC_API_KEY", "UPLOAD_POST_API_KEY", "UPLOAD_POST_WEBHOOK_SECRET", "AYRSHARE_API_KEY",
             "SOCIAL_NETTOYAGE_CLE", "SOCIAL_CODE_PDG", "SOCIAL_EMAIL_PDG", "DATABASE_URL", "POSTGRESQL_ADDON_URI",
-            "SMTP_HOST", "SOCIAL_CLE_CHIFFREMENT"):
+            "SMTP_HOST", "SOCIAL_CLE_CHIFFREMENT", "GOOGLE_PLACES_API_KEY", "SOCIAL_LEADS_WEBHOOK",
+            "SOCIAL_LEADS_WEBHOOK_SECRET", "SOCIAL_CONVERSIONS_SECRET", "SOCIAL_APPELS_SECRET"):
     os.environ.pop(cle, None)
 os.environ.update(SOCIAL_DONNEES=_TMP, SOCIAL_FICHIERS=f"{_TMP}/fichiers", SOCIAL_HORLOGE="0",
                   MAIL_TEST_MODE="1", SOCIAL_URL_PUBLIQUE="https://social.exemple.test")
@@ -35,6 +36,15 @@ def _transport_interdit(*a, **k):
 
 
 upload_post._http = _transport_interdit
+
+
+def _sortie_interdite(*a, **k):
+    raise AssertionError(f"appel sortant non prévu par le banc : {a[:2]}")
+
+
+from alma_social import maps, qualification  # noqa: E402
+maps._http = _sortie_interdite                      # Google Places
+qualification._http_post = _sortie_interdite        # le webhook des fiches prospects
 
 IMAGES = ICI / "images"
 _ok, _ko = [], []

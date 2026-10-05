@@ -34,7 +34,8 @@ def marques(actives_seulement: bool = True) -> list:
 
 
 def en_pause(m: dict) -> bool:
-    return bool(m.get("paused_until"))
+    """En pause, ou en crise : dans les deux cas, rien ne part."""
+    return bool(m.get("paused_until") or m.get("crisis_since"))
 
 
 def pilier(m: dict, cle: str) -> dict | None:

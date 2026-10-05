@@ -1,4 +1,4 @@
-/* Réglages — l'arrêt général, le bac à sable, les pauses, les comptes, le
+/* Réglages — l'arrêt général, le bac à sable, les pauses, le mode crise, les comptes, le
  * copilote, les modèles des agents et le plafond de l'IA, le journal. */
 "use strict";
 
@@ -18,9 +18,15 @@ async function vueReglages() {
     <h2 class="section">Marques</h2>
     ${ETAT.marques.map(m => `<section class="carte" style="border-left:6px solid ${esc(m.couleur)}">
       <div class="ligne"><h3>${esc(m.nom)}</h3>
-        ${m.en_pause ? `<button class="secondaire" data-reprendre="${esc(m.id)}">▶ Reprendre</button>`
+        ${m.crise ? "" : m.en_pause ? `<button class="secondaire" data-reprendre="${esc(m.id)}">▶ Reprendre</button>`
                      : `<button class="secondaire" data-pause="${esc(m.id)}">⏸ Pause 48 h</button>`}</div>
-      ${m.en_pause ? `<p class="attention petit">En pause${m.pause_raison ? " (" + esc(m.pause_raison) + ")" : ""}. Rien ne repart sans « Reprendre ».</p>` : ""}
+      ${m.crise ? `<div class="crise"><b>🚨 Mode crise</b> depuis ${esc(quand(m.crise_depuis))} — ${esc(m.crise_raison || "")}.
+          Rien ne part, aucune réponse automatique.
+          <p class="petit">Brouillon de prise de parole (rien n'est parti) :</p>
+          <textarea class="champ" rows="5" readonly>${esc(m.crise_brouillon)}</textarea>
+          <button class="secondaire" data-lever-crise="${esc(m.id)}">Lever la crise</button></div>`
+        : m.en_pause ? `<p class="attention petit">En pause${m.pause_raison ? " (" + esc(m.pause_raison) + ")" : ""}. Rien ne repart sans « Reprendre ».</p>` : ""}
+      ${m.crise ? "" : `<button class="crise-bouton" data-crise="${esc(m.id)}">🚨 Mode crise</button>`}
       <ul class="pubs">${m.reseaux.map(r => `<li class="ligne"><span>${esc(r.nom)} ${r.poignee ? `<span class="doux">${esc(r.poignee)}</span>` : ""}</span>
         <span class="${r.etat === "actif" ? "ok" : r.etat === "a_relier" ? "doux" : "attention"}">${esc({ actif: "relié", a_relier: "à relier", pause: "en pause", erreur: "à reconnecter" }[r.etat] || r.etat)}</span></li>`).join("")}</ul>
       <div class="actions"><button class="secondaire" data-relier="${esc(m.id)}">Relier les réseaux</button>
@@ -83,6 +89,17 @@ $("#v-reglages").addEventListener("click", async e => {
       const v = prompt("Plafond IA du mois, en dollars :");
       if (v === null) return;
       await api("/api/reglages/plafond", { json: { usd: Number(v.replace(",", ".")) } });
+    }
+    if (d.crise) {
+      const raison = prompt(`Mode crise pour ${nomMarque(d.crise)} : tout s'arrête, plus aucune réponse automatique, et un brouillon de prise de parole vous attend. Pourquoi ?`);
+      if (raison === null) return;
+      const r = await api(`/api/marque/${d.crise}/crise`, { json: { raison } });
+      dire(`<p><b>Mode crise activé.</b> ${r.retenues} publication(s) retenue(s).</p><p class="petit">Brouillon de prise de parole :</p><textarea class="champ" rows="6" readonly>${esc(r.brouillon)}</textarea>`);
+    }
+    if (d.leverCrise) {
+      if (!confirm("Lever la crise : les publications retenues repartent, étalées dans le temps, et les réponses automatiques reprennent. Continuer ?")) return;
+      const r = await api(`/api/marque/${d.leverCrise}/crise/lever`, { json: {} });
+      dire(`<p>Crise levée. ${r.repris} publication(s) repartent.</p>`);
     }
     if (d.pause) await api(`/api/marque/${d.pause}/pause`, { json: {} });
     if (d.reprendre) await api(`/api/marque/${d.reprendre}/reprendre`, { json: {} });

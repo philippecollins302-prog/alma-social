@@ -261,6 +261,20 @@ numéro se déclare ensuite avec sa source (google, panneau, camion…).
 **Le lundi à 8 h**, la note arrive par courriel ; ses décisions s'appliquent à
 midi sauf « Non ». Une dépense n'est jamais appliquée seule.
 
+## La relation et la réputation
+
+- **Boîte** : ce qui demande un humain (plainte, gros compte, avis ≤ 3 ★), avec un brouillon et le nom de qui s'en charge ; puis les **prospects qualifiés**, chauds en tête, avec un bouton « Appeler » ; le délai réel de réponse en haut. « Réglé autrement » sort un message de la liste.
+- **« DEVIS » sous une publication** (REGA, VIP Plus, LMS) ou **« BOWL »** (SAZÚ) : la réponse part seule avec le lien de la conversation (ou de la commande).
+- **La conversation** : `https://<adresse>/parler/<marque>`. Sur le site d'une marque, une ligne suffit pour le bouton :
+
+  ```html
+  <script src="https://<adresse>/s/chat.js?marque=rega" async></script>
+  ```
+
+- **Demander un avis** : Boîte → « Demander un avis » (nom, e-mail). Depuis un outil de facturation : `POST /api/avis/evenement` avec `{"marque", "evenement": "pv_chantier|facture_payee|commande_livree", "id", "nom", "email"}`, signé comme les conversions.
+- **Réputation** (Boîte → Réputation) : ce que disent les avis, la position Google Maps, l'audit de la fiche. Il faut l'identifiant de la fiche Google (place ID) de chaque marque.
+- **Mode crise** : Réglages → la marque → 🚨. Tout s'arrête pour elle, plus aucune réponse automatique, un brouillon de prise de parole vous attend. Il se déclenche aussi seul sur une vague de messages négatifs.
+
 ## Pour aller plus loin
 
 - `DECISIONS.md` — chaque choix technique, en une ligne, avec sa raison ;

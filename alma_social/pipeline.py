@@ -755,7 +755,8 @@ def publier(pl: dict):
         _suspendre(p, "arrêt général")
         return
     if acces.en_pause(m) or not m["active"]:
-        _suspendre(p, f"marque en pause : {m.get('paused_reason') or 'pause 48 h'}")
+        _suspendre(p, f"mode crise : {m.get('crisis_reason') or 'crise'}" if m.get("crisis_since") else
+                   f"marque en pause : {m.get('paused_reason') or 'pause 48 h'}")
         return
     bac = journal.bac_a_sable()
     cpt = acces.compte(m["id"], p["platform"])
