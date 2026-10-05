@@ -157,6 +157,8 @@ def semer() -> dict:
     db.initialiser()
     out = {"contraintes": contraintes(), "marques": marques(), "utilisateurs": utilisateurs(),
            "campagnes": campagnes()}
+    from . import acces, marque
+    out["plateformes"] = marque.semer(acces.marques(), par="graines")
     if any(out.values()):
         log.info("graines : %s", out)
     return out

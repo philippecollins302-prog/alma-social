@@ -144,9 +144,12 @@ def verifier_texte(texte: str, plateforme: str, marque: dict, contrainte: dict |
     langue = langue_douteuse(texte)
     if langue:
         v.append(langue)
+    # « lien en bio » est la consigne d'Instagram, pas une allégation : SAZÚ
+    # interdit « bio » (le produit ne l'est pas), pas l'adresse de son profil.
+    bas_mots = re.sub(r"\b(lien|link) (en|in) bio\b", r"\1 \2 profil", bas)
     for mot in voix.get("forbidden") or []:
         motif = r"\b" + re.escape(_sans_accents(mot.lower())) + r"\b"
-        if re.search(motif, bas):
+        if re.search(motif, bas_mots):
             v.append(f"mot interdit pour cette marque : « {mot} »")
     for promesse in voix.get("forbidden_promises") or []:
         if re.search(_sans_accents(promesse.lower()), bas):

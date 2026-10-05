@@ -3,21 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1C2B3A">
+<meta name="theme-color" content="#0E1116">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ALMA SOCIAL">
 <title>ALMA SOCIAL</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/static/icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icone-192.png">
-<link rel="stylesheet" href="/static/app.css?v=2">
+<link rel="stylesheet" href="/static/app.css?v=3">
 </head>
 <body>
 <!-- La porte : un code personnel, rien d'autre. -->
 <section id="porte" hidden>
   <div class="porte">
-    <h1>ALMA SOCIAL</h1>
-    <p class="doux">Votre code personnel</p>
+    <div class="sceau" aria-hidden="true">✦</div>
+    <h1>ALMA<br>SOCIAL</h1>
+    <p class="doux">Six marques. Une photo suffit.</p>
     <form id="f-porte" autocomplete="off">
       <input id="code" type="password" inputmode="numeric" autocomplete="current-password" required
              minlength="6" placeholder="••••••" aria-label="Code personnel">
@@ -29,58 +31,73 @@
 
 <section id="appli" hidden>
   <header class="haut">
-    <strong>ALMA SOCIAL</strong>
+    <button class="titre" data-aller="deposer" aria-label="Accueil">ALMA<b>✦</b>SOCIAL</button>
     <span id="bandeau" class="bandeau"></span>
+    <button class="demander-puce" data-aller="demander" aria-label="Demander à l'application">✦ Demander</button>
   </header>
 
-  <!-- 1. Déposer : la photo, puis la marque. Deux gestes. -->
+  <!-- Déposer : la photo, une phrase si on veut, la marque. -->
   <main id="v-deposer" class="vue">
-    <label class="choisir" id="choisir">
+    <label class="objectif" id="choisir">
       <input id="fichiers" type="file" accept="image/*" multiple hidden>
-      <span class="grand-emoji" aria-hidden="true">📷</span>
-      <span id="choisir-texte">Prendre ou choisir des photos</span>
+      <span class="viseur" aria-hidden="true"></span>
+      <span id="choisir-texte" class="objectif-texte">Prendre ou choisir des photos</span>
+      <span class="objectif-conseil" id="conseil">Lumière du jour, le sujet au centre, téléphone stable.</span>
     </label>
     <div id="apercus" class="apercus"></div>
-    <p id="consigne" class="consigne">Puis touchez la marque :</p>
+    <div class="dictee" id="dictee" hidden>
+      <button class="micro" id="micro" type="button" aria-label="Dicter une phrase">🎙</button>
+      <input id="note" class="champ" maxlength="300" placeholder="Une phrase si vous voulez : « Lattes, terrasse livrée hier »">
+    </div>
+    <p id="consigne" class="consigne">Puis touchez la marque</p>
     <div id="marques" class="marques"></div>
     <div id="envois" class="envois" aria-live="polite"></div>
+    <h2 class="section">Derniers dépôts</h2>
+    <div id="derniers"></div>
   </main>
 
-  <!-- 2. Mes photos : ce qu'elles sont devenues. -->
-  <main id="v-photos" class="vue" hidden>
-    <div class="filtres" id="filtre-photos"></div>
-    <div id="liste-photos"></div>
-  </main>
-
-  <!-- 3. Résultats : les clients d'abord. -->
-  <main id="v-resultats" class="vue" hidden>
-    <div id="a-traiter"></div>
-    <div id="tableau"></div>
-  </main>
-
-  <!-- 4. Agenda : le mois, les rendez-vous, les campagnes. -->
-  <main id="v-agenda" class="vue" hidden>
-    <div class="filtres" id="filtre-agenda"></div>
-    <div id="agenda"></div>
-  </main>
-
-  <!-- 5. Réglages : l'arrêt, les pauses, les comptes, la santé, le journal. -->
-  <main id="v-reglages" class="vue" hidden>
-    <div id="reglages"></div>
-  </main>
+  <main id="v-aujourdhui" class="vue" hidden></main>
+  <main id="v-calendrier" class="vue" hidden></main>
+  <main id="v-boite" class="vue" hidden></main>
+  <main id="v-resultats" class="vue" hidden></main>
+  <main id="v-demander" class="vue" hidden></main>
+  <main id="v-marques" class="vue" hidden></main>
+  <main id="v-sante" class="vue" hidden></main>
+  <main id="v-reglages" class="vue" hidden></main>
 
   <nav class="onglets" role="tablist">
-    <button data-vue="deposer" class="actif">📷<span>Déposer</span></button>
-    <button data-vue="photos">🖼️<span>Photos</span></button>
-    <button data-vue="resultats">📈<span>Résultats</span></button>
-    <button data-vue="agenda">📅<span>Agenda</span></button>
-    <button data-vue="reglages">⚙️<span>Réglages</span></button>
+    <button data-vue="deposer" class="actif"><i>◉</i><span>Déposer</span></button>
+    <button data-vue="aujourdhui"><i>☀</i><span>Aujourd'hui</span></button>
+    <button data-vue="boite"><i>✉</i><span>Boîte</span><em id="pastille-boite" hidden></em></button>
+    <button data-vue="resultats"><i>↗</i><span>Résultats</span></button>
+    <button data-vue="plus"><i>☰</i><span>Plus</span></button>
   </nav>
 </section>
 
-<dialog id="dialogue"><div id="dialogue-corps"></div><form method="dialog"><button class="secondaire">Fermer</button></form></dialog>
+<dialog id="tiroir" class="tiroir">
+  <div class="grille-plus">
+    <button data-aller="calendrier"><i>▦</i>Calendrier</button>
+    <button data-aller="demander"><i>✦</i>Demander</button>
+    <button data-aller="marques"><i>◆</i>Marques</button>
+    <button data-aller="sante"><i>♥</i>Santé</button>
+    <button data-aller="reglages"><i>⚙</i>Réglages</button>
+  </div>
+  <form method="dialog"><button class="secondaire large">Fermer</button></form>
+</dialog>
 
-<script src="/static/js/attente.js?v=2"></script>
-<script src="/static/js/app.js?v=2"></script>
+<dialog id="dialogue"><div id="dialogue-corps"></div><form method="dialog"><button class="secondaire large">Fermer</button></form></dialog>
+
+<script src="/static/js/attente.js?v=3"></script>
+<script src="/static/js/socle.js?v=3"></script>
+<script src="/static/js/deposer.js?v=3"></script>
+<script src="/static/js/aujourdhui.js?v=3"></script>
+<script src="/static/js/calendrier.js?v=3"></script>
+<script src="/static/js/boite.js?v=3"></script>
+<script src="/static/js/resultats.js?v=3"></script>
+<script src="/static/js/demander.js?v=3"></script>
+<script src="/static/js/marques.js?v=3"></script>
+<script src="/static/js/sante.js?v=3"></script>
+<script src="/static/js/reglages.js?v=3"></script>
+<script src="/static/js/demarrage.js?v=3"></script>
 </body>
 </html>

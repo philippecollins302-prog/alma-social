@@ -1,0 +1,126 @@
+{
+  "_lisez_moi": "Plateformes de marque v1, écrites le 05/10/2026 à partir du Drive et des fiches de graines/marques.json. PROVISOIRES : Philippe les relit une fois (écran Marques). Les preuves ne citent QUE des clés de `facts` : une preuve qui n'est pas en base ne peut pas être écrite. Les objectifs se fixent après quatre semaines de mesure réelle — d'ici là ils disent ce qu'on mesure, pas un chiffre inventé.",
+  "alma": {
+    "positionnement": "Le groupe qui couvre toute la chaîne technique d'un bâtiment, de l'étude à la maintenance, avec des sociétés spécialisées qui travaillent ensemble.",
+    "difference": "Là où un donneur d'ordre jongle entre cinq prestataires, le groupe en aligne trois qui se connaissent déjà.",
+    "promesse": "Un interlocuteur structuré pour les grands comptes, dans quatre villes du Sud.",
+    "preuves": ["societes", "villes"],
+    "personas": [
+      {"nom": "Le directeur patrimoine", "qui": "bailleur social ou foncière, 40–60 ans", "veut": "moins d'interlocuteurs, des délais tenus, des rapports clairs", "bloque": "la peur d'un groupe trop petit pour son parc", "ou": "LinkedIn, salons, recommandations", "quand": "au renouvellement des marchés, au budget annuel"},
+      {"nom": "L'assureur ou l'expert", "qui": "gestionnaire sinistres, cabinet d'expertise", "veut": "une remise en état rapide, documentée", "bloque": "les prestataires qui ne rendent pas compte", "ou": "LinkedIn, réseau professionnel", "quand": "à chaque sinistre"},
+      {"nom": "Le candidat", "qui": "technicien, conducteur de travaux, chargé d'affaires", "veut": "un groupe qui grandit, des chantiers variés", "bloque": "l'image d'une PME sans perspectives", "ou": "LinkedIn, Indeed, bouche-à-oreille", "quand": "en veille permanente"}
+    ],
+    "objections": [
+      {"objection": "Vous êtes trop petits pour nos volumes.", "reponse": "Trois sociétés, quatre villes, une coordination unique : on montre les références, pas des slogans."},
+      {"objection": "Un groupe, c'est plus cher.", "reponse": "Un seul interlocuteur évite les reprises entre corps de métier ; on le montre chantier par chantier."}
+    ],
+    "voix": {"on_dit": ["nos sociétés", "toute la chaîne", "nos équipes en région"], "on_ne_dit_pas": ["leader", "n°1", "pas cher", "notre chiffre d'affaires"], "longueur": "moyen"},
+    "mix": {"utile": 40, "communaute": 40, "vente": 20},
+    "parcours": {"connaitre": "références et coulisses sur LinkedIn", "hesiter": "complémentarité expliquée, cas clients", "agir": "prise de contact par la page du groupe", "revenir": "actualité du groupe, nouvelles implantations"},
+    "objectifs": {"j30": "mesurer : abonnés LinkedIn, visites de la page, prises de contact", "j90": "à fixer le 02/11 sur quatre semaines de mesure", "j180": "à fixer le 02/11"},
+    "direction_artistique": {"style_photo": "équipes réelles, lieux réels, lumière naturelle ; jamais de banque d'images", "style_video": "témoignages courts, visites de chantier", "gabarits": ["chiffre clé", "référence", "recrutement"], "mise_en_scene": "decor_reel"},
+    "accroches": ["Trois sociétés, un seul interlocuteur.", "Ce que nos équipes ont livré ce mois-ci.", "Pourquoi un bailleur nous a confié tout un immeuble."]
+  },
+  "rega": {
+    "positionnement": "L'entreprise générale qui coordonne tout le chantier, de la structure aux finitions, pour un seul interlocuteur du début à la fin.",
+    "difference": "Un particulier ou un promoteur n'a pas à orchestrer les corps de métier : REGA le fait, et rend compte.",
+    "promesse": "Un chantier tenu, qualité et délais, avec un interlocuteur unique.",
+    "preuves": ["devis", "reference_24_logements", "construction_neuve"],
+    "personas": [
+      {"nom": "Le particulier qui rénove", "qui": "propriétaire 35–60 ans, maison ou appartement dans l'Hérault", "veut": "un seul responsable, un prix tenu, un chantier propre", "bloque": "la peur des dérapages et des artisans qui disparaissent", "ou": "Instagram, Facebook, Google Maps", "quand": "au printemps et à la rentrée, après une visite de bien"},
+      {"nom": "Le promoteur", "qui": "programme de R+2 à R+8, Occitanie et PACA", "veut": "un gros œuvre tenu au planning, un partenaire solide", "bloque": "les retards en cascade", "ou": "LinkedIn, réseau", "quand": "aux appels d'offres"},
+      {"nom": "L'architecte prescripteur", "qui": "agence d'architecture, maître d'œuvre", "veut": "une entreprise qui respecte ses plans et ses détails", "bloque": "les exécutions approximatives", "ou": "LinkedIn, Instagram, Pinterest", "quand": "en phase de consultation"}
+    ],
+    "objections": [
+      {"objection": "Une entreprise générale prend une marge sur tout.", "reponse": "La coordination évite les reprises et les trous de planning ; le devis est détaillé poste par poste."},
+      {"objection": "Vous êtes à Castelnau, mon chantier est à Marseille.", "reponse": "La référence de Marseille, un immeuble occupé de 24 logements, en est la preuve."}
+    ],
+    "voix": {"on_dit": ["votre chantier", "un seul interlocuteur", "livré", "tous corps d'état"], "on_ne_dit_pas": ["pas cher", "le meilleur", "garanti sans retard"], "longueur": "moyen"},
+    "mix": {"utile": 40, "communaute": 30, "vente": 30},
+    "parcours": {"connaitre": "avant/après et Reels de chantier", "hesiter": "méthode, coulisses, la référence de Marseille", "agir": "devis gratuit, réponse sous 48 h", "revenir": "suivi de chantier, avis Google"},
+    "objectifs": {"j30": "mesurer : demandes de devis par réseau, appels, clics vers le devis", "j90": "à fixer le 02/11 sur quatre semaines de mesure", "j180": "à fixer le 02/11"},
+    "direction_artistique": {"style_photo": "le chantier réel, lumière du jour, plans larges puis détails ; aucun décor remplacé", "style_video": "photos de chantier animées, avant/après en rideau", "gabarits": ["avant/après", "étape de chantier", "chantier livré"], "mise_en_scene": "decor_reel"},
+    "accroches": ["Jour 1 → livraison.", "Ce mur porte désormais trois étages.", "Avant, après : même pièce, même angle."]
+  },
+  "vipplus": {
+    "positionnement": "La société technique qui étudie, fabrique, installe et maintient tout ce qui ferme, sécurise et équipe un bâtiment.",
+    "difference": "Un bureau d'études intégré : ce que VIP Plus installe, VIP Plus l'a conçu et le maintient.",
+    "promesse": "Une installation pensée, posée et suivie par la même équipe.",
+    "preuves": [],
+    "personas": [
+      {"nom": "Le syndic", "qui": "gestionnaire de copropriétés, Hérault", "veut": "des portes, accès et alarmes qui marchent, une intervention rapide", "bloque": "les copropriétaires qui se plaignent", "ou": "LinkedIn, Google, recommandations", "quand": "à chaque panne, aux assemblées générales"},
+      {"nom": "Le responsable de site", "qui": "entreprise, établissement public", "veut": "sécurité, conformité, contrat de maintenance clair", "bloque": "l'empilement de prestataires", "ou": "LinkedIn, appels d'offres", "quand": "au budget, après un incident"},
+      {"nom": "Le particulier exigeant", "qui": "maison, portail, alarme, climatisation", "veut": "un travail propre et un interlocuteur joignable", "bloque": "le prix et la peur du mauvais artisan", "ou": "Facebook, Google Maps, Instagram", "quand": "avant l'été (clim), après un cambriolage"}
+    ],
+    "objections": [
+      {"objection": "Un serrurier, ça se trouve partout.", "reponse": "Étude, fabrication et maintenance au même endroit : on montre l'atelier et le bureau d'études."}
+    ],
+    "voix": {"on_dit": ["étudier, fabriquer, installer, maintenir", "sur mesure", "notre atelier"], "on_ne_dit_pas": ["dépannage pas cher", "intervention en 10 minutes", "le meilleur"], "longueur": "moyen"},
+    "mix": {"utile": 50, "communaute": 25, "vente": 25},
+    "parcours": {"connaitre": "réalisations, atelier en vidéo", "hesiter": "explications techniques simples", "agir": "demande d'étude ou de devis", "revenir": "maintenance, saisonnalité (clim, chauffage)"},
+    "objectifs": {"j30": "mesurer : appels, demandes d'étude, visites de la fiche Google", "j90": "à fixer le 02/11", "j180": "à fixer le 02/11"},
+    "direction_artistique": {"style_photo": "pièces fabriquées, poses réelles, détails métalliques ; décor réel", "style_video": "atelier, soudure, pose en accéléré", "gabarits": ["réalisation", "conseil technique", "recrutement"], "mise_en_scene": "decor_reel"},
+    "accroches": ["Dessiné au bureau d'études, posé par la même équipe.", "Ce portail sort de notre atelier.", "Ce qu'on vérifie avant chaque été."]
+  },
+  "lms": {
+    "positionnement": "Le poseur de sols haut de gamme qui gagne sur la préparation : ce qui ne se voit pas fait que tout le reste dure.",
+    "difference": "Une méthode en cinq étapes, préparation des supports comprise, là où d'autres posent sur l'existant.",
+    "promesse": "Un sol posé dans les règles, qui tient dans le temps.",
+    "preuves": ["methode"],
+    "personas": [
+      {"nom": "Le propriétaire qui rénove", "qui": "particulier 35–65 ans, Montpellier et sa région", "veut": "un rendu impeccable, un conseil sur le bon matériau", "bloque": "la peur d'un sol qui gondole ou qui sonne creux", "ou": "Instagram, Pinterest, Google Maps", "quand": "avant un emménagement, au printemps"},
+      {"nom": "Le bailleur ou le syndic", "qui": "parc de logements, parties communes", "veut": "des sols résistants, une pose rapide entre deux locataires", "bloque": "les délais et les reprises", "ou": "LinkedIn, Google", "quand": "à la relocation, aux travaux votés"},
+      {"nom": "L'entreprise", "qui": "bureaux, commerces, collectivités", "veut": "un chantier rapide, propre, sans arrêter l'activité", "bloque": "la gêne pendant les travaux", "ou": "LinkedIn", "quand": "aux réaménagements"}
+    ],
+    "objections": [
+      {"objection": "La préparation, c'est un prétexte pour gonfler le devis.", "reponse": "On la montre en photos : ragréage, planéité, humidité — c'est ce qui fait tenir le sol."}
+    ],
+    "voix": {"on_dit": ["la préparation", "la pose", "les finitions", "dans les règles"], "on_ne_dit_pas": ["pas cher", "le moins cher", "posé en une heure"], "longueur": "court"},
+    "mix": {"utile": 45, "communaute": 25, "vente": 30},
+    "parcours": {"connaitre": "avant/après, Reels de pose", "hesiter": "la méthode en cinq étapes, le choix des matériaux", "agir": "demande de devis par e-mail ou téléphone", "revenir": "entretien des sols, avis"},
+    "objectifs": {"j30": "mesurer : demandes de devis, appels, enregistrements des avant/après", "j90": "à fixer le 02/11", "j180": "à fixer le 02/11"},
+    "direction_artistique": {"style_photo": "lumière rasante qui montre la matière, plans au ras du sol ; décor réel", "style_video": "pose en accéléré, avant/après en rideau", "gabarits": ["avant/après", "méthode en 5 étapes", "matériau du mois"], "mise_en_scene": "decor_reel"},
+    "accroches": ["Ce qu'il y a sous un beau parquet.", "Même pièce, même angle, quatre jours d'écart.", "Étape 3 sur 5 : la préparation."]
+  },
+  "lms-paca": {
+    "positionnement": "L'interlocuteur technique unique des syndics de Marseille : un appel, six métiers, et un rapport photo à chaque intervention.",
+    "difference": "Le syndic n'appelle plus six artisans : un seul numéro, une astreinte, un compte rendu.",
+    "promesse": "Rapide, simple, rassurant, efficace — et documenté.",
+    "preuves": ["experience", "urgence", "devis", "astreinte", "assurance", "metiers"],
+    "personas": [
+      {"nom": "Le gestionnaire de copropriété", "qui": "cabinet de syndic marseillais, 30–55 ans, 40 à 80 immeubles", "veut": "qu'on décroche, qu'on intervienne, qu'on rende compte", "bloque": "les artisans injoignables et les copropriétaires mécontents", "ou": "LinkedIn, Google, bouche-à-oreille entre syndics", "quand": "à chaque urgence, aux renouvellements de contrats"},
+      {"nom": "Le bailleur", "qui": "bailleur social ou privé", "veut": "un prestataire multiservice, des délais courts entre deux locataires", "bloque": "les reprises", "ou": "LinkedIn, appels d'offres", "quand": "au budget annuel"},
+      {"nom": "Le conseil syndical", "qui": "copropriétaires bénévoles", "veut": "la preuve que le travail a été fait", "bloque": "la défiance envers les prestataires", "ou": "Facebook, Google Maps", "quand": "avant l'assemblée générale"}
+    ],
+    "objections": [
+      {"objection": "Un multiservice fait tout moyennement.", "reponse": "Six métiers intégrés et un rapport photo par intervention : la preuve est dans chaque compte rendu."}
+    ],
+    "voix": {"on_dit": ["votre immeuble", "un seul numéro", "rapport photo", "intervention"], "on_ne_dit_pas": ["le meilleur", "pas cher", "zéro problème"], "longueur": "court"},
+    "mix": {"utile": 50, "communaute": 20, "vente": 30},
+    "parcours": {"connaitre": "interventions avant/après, rapport photo", "hesiter": "astreinte et assurance expliquées", "agir": "devis détaillé sous 48 h", "revenir": "contrat d'entretien, avis des syndics"},
+    "objectifs": {"j30": "mesurer : demandes de devis syndics, appels d'astreinte venus des réseaux", "j90": "à fixer le 02/11", "j180": "à fixer le 02/11"},
+    "direction_artistique": {"style_photo": "parties communes réelles, avant/après, technicien en action ; décor réel", "style_video": "intervention en 15 secondes", "gabarits": ["avant/après", "rapport photo", "astreinte"], "mise_en_scene": "decor_reel"},
+    "accroches": ["Appel à 8 h 12, réglé avant midi.", "Ce que reçoit le syndic après chaque intervention.", "Six métiers, un seul numéro."]
+  },
+  "sazu": {
+    "positionnement": "Le bowl latino chaud de Boutonnet, cuisiné le matin même, qui arrive encore fumant.",
+    "difference": "Du chaud, du vrai, cuisiné sur place le matin ; une salsa offerte à choisir de suave à fuego.",
+    "promesse": "Un bowl généreux qui a du goût, du suave au fuego, livré chaud.",
+    "preuves": ["ouverture", "horaires", "cuisine", "salsas", "salvador", "bowls"],
+    "personas": [
+      {"nom": "L'étudiant de Boutonnet", "qui": "18–25 ans, fac de sciences, médecine, Paul-Valéry", "veut": "manger bien et beaucoup, vite, entre deux cours", "bloque": "le prix et l'attente", "ou": "TikTok, Instagram, Uber Eats", "quand": "11 h 30–13 h et 20 h–22 h, le dimanche soir"},
+      {"nom": "La soignante de garde", "qui": "infirmière, interne, 22–40 ans, hôpitaux voisins", "veut": "un repas chaud qui la tient pendant la garde", "bloque": "le temps pour aller le chercher", "ou": "Instagram, Deliveroo", "quand": "avant et pendant la garde, tard le soir"},
+      {"nom": "Le voisin curieux", "qui": "habitant du quartier, 25–35 ans", "veut": "découvrir un nouveau goût près de chez lui", "bloque": "ne pas savoir que SAZÚ existe", "ou": "Instagram, Google Maps", "quand": "le week-end, le soir"}
+    ],
+    "objections": [
+      {"objection": "Encore une dark kitchen sans âme.", "reponse": "On montre la cuisine de 20 m², le bœuf effiloché 12 h, les gens qui cuisinent."},
+      {"objection": "C'est trop épicé pour moi.", "reponse": "Six salsas, du suave au fuego : c'est toi qui choisis."}
+    ],
+    "voix": {"on_dit": ["calor", "sazón", "suave → fuego", "cuisiné ce matin", "chaud devant"], "on_ne_dit_pas": ["healthy", "sain", "équilibré", "détox", "le meilleur bowl de Montpellier"], "longueur": "court"},
+    "mix": {"utile": 20, "communaute": 40, "vente": 40},
+    "parcours": {"connaitre": "Reels de dressage, TikTok du chef, coulisses de l'ouverture", "hesiter": "les quatre bowls, les six salsas, l'échelle suave → fuego", "agir": "commander sur Uber Eats ou Deliveroo, retrait à la porte", "revenir": "nouveautés, défis fuego, avis"},
+    "objectifs": {"j30": "mesurer à partir du 27/11 : commandes attribuées, clics vers les apps, abonnés de Boutonnet", "j90": "à fixer fin décembre sur quatre semaines d'ouverture", "j180": "à fixer fin décembre"},
+    "direction_artistique": {"style_photo": "le vrai bowl photographié, vue de dessus ou 45°, lumière douce chaude ; le fond peut être refait en studio, jamais le plat", "style_video": "dressage en 8 secondes, vapeur, la salsa qui coule ; sous-titres animés aux couleurs", "gabarits": ["bowl du jour", "échelle suave → fuego", "compte à rebours d'ouverture", "avis client"], "mise_en_scene": "studio_permis"},
+    "accroches": ["Chaud devant 🔥", "Ce bœuf a cuit 12 heures. Toi, tu attends 25 minutes.", "Suave ou fuego ? Montre-nous ta salsa."]
+  }
+}

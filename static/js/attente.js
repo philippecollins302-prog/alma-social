@@ -36,8 +36,8 @@ const Attente = (() => {
     return (crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2));
   }
 
-  async function ajouter(marque, fichier) {
-    const e = { ref: reference(), marque, nom: fichier.name || "photo.jpg", type: fichier.type,
+  async function ajouter(marque, fichier, note = "") {
+    const e = { ref: reference(), marque, note, nom: fichier.name || "photo.jpg", type: fichier.type,
                 blob: fichier, etat: "attente", essais: 0, cree: Date.now(), erreur: "" };
     await op("readwrite", s => s.put(e));
     return e;
@@ -60,6 +60,7 @@ const Attente = (() => {
         const f = new FormData();
         f.append("marque", e.marque);
         f.append("refs", e.ref);
+        if (e.note) f.append("note", e.note);
         f.append("photos", e.blob, e.nom);
         try {
           const r = await fetch("/api/depot", { method: "POST", body: f, headers: { "X-Alma": "1" },

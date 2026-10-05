@@ -84,3 +84,19 @@ plus simple à maintenir ».
 
 - Une PWA sans bibliothèque ni étape de construction : elle s'ouvre depuis un lien et s'ajoute à l'écran d'accueil.
 - Les photos attendent dans le téléphone (IndexedDB) jusqu'à l'accusé de réception, avec une référence unique : un sous-sol sans réseau ne perd rien, un renvoi ne crée rien deux fois.
+
+## v3 — le cerveau (jalon 1, 05/10/2026)
+
+- Une équipe de 14 agents (`alma_social/agents.py`), chacun avec son niveau de modèle : le plus capable (Opus 5.5) pour le Stratège, le Critique, l'Analyste, le Média acheteur et Demander ; le rapide (Sonnet 5.5) pour le volume ; le petit (Haiku 4.5) pour le tri. Le niveau se règle agent par agent dans Réglages, sans redéployer.
+- Tous les appels passent par `ia.appeler` et sont inscrits dans `agent_runs` : agent, marque, objet, modèle qui a VRAIMENT répondu, version des consignes, entrées, sortie, jetons, coût, durée.
+- Le contexte de marque part en cache côté modèle : identique d'un appel à l'autre, il coûte dix fois moins cher relu.
+- Plafond IA mensuel (150 $ par défaut, réglable) : au-delà, chaque agent passe sur son repli et UNE alerte part. Une dépense non décidée n'a pas lieu.
+- La plateforme de marque est versionnée ; une preuve ne peut citer qu'un fait de la base ; la mise en scène suit le secteur et le modèle ne peut pas la changer (SAZÚ : fond studio permis ; chantiers et sols : décor réel).
+- Le Critique note sur 100 (9 critères pondérés) ; sous 80, réécriture avec les remarques, trois tours, puis retour à la banque. Sans clé, une grille locale ne juge que la forme : seuil 60, et chaque note porte le nom de son juge — sinon plus rien ne sortirait du bac à sable sans clé.
+- La voix apprend des corrections par des règles lisibles (mot retiré, plus court, emoji, tutoiement), pas par un modèle : on sait toujours pourquoi elle a bougé. Trois corrections du même genre font une règle.
+- Une leçon n'entre au carnet qu'avec au moins six publications et sa période ; une nouvelle mesure sur la même clé remplace l'ancienne (« contredite », gardée lisible).
+- « Demander » répond avec un instantané calculé par le code ; ses actions sont une liste fermée (pause, reprise) exécutée avec les droits de la personne.
+- Le copilote = l'ancien « validation requise », désactivé partout ; il n'a pas d'écran « approuver / rejeter », seulement « Laisser partir » dans Aujourd'hui.
+- La base de production reçoit les colonnes nouvelles par une migration douce (ajout seulement, jamais de retrait).
+- Interface : nuit d'encre par défaut, or du groupe en accent, Archivo Black + DM Sans servies localement, 9 écrans (5 onglets + « Plus »).
+- « lien en bio » n'est plus pris pour le mot interdit « bio » de SAZÚ (faux positif qui refusait toute légende Instagram).

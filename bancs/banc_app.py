@@ -164,6 +164,41 @@ verifier("illisible" in stockage.verifier_le_montage(config.RACINE / "nulle-part
                                                      env={"CC_FS_BUCKET": "/f:b"}),
          "un dossier illisible : c'est la panne")
 
+print("— v3 : l'équipe, la plateforme, Demander, Aujourd'hui, le copilote")
+egal(lucie.get("/api/equipe").status_code, 403, "l'équipe et ses coûts : réservés au PDG")
+eq = pdg.get("/api/equipe").json()
+verifier(len(eq["agents"]) >= 10 and "plafond_usd" in eq["couts"], "le PDG voit les agents, leur modèle et les coûts")
+egal(pdg.post("/api/reglages/agents", json={"agent": "critique", "niveau": "rapide"}, headers=X).json()["modele"],
+     "claude-sonnet-5-5", "le PDG règle le modèle d'un agent")
+egal(pdg.post("/api/reglages/agents", json={"agent": "inconnu", "niveau": "fort"}, headers=X).status_code, 400,
+     "un agent inconnu est refusé")
+pdg.post("/api/reglages/agents", json={"agent": "critique", "niveau": "fort"}, headers=X)
+egal(pdg.post("/api/reglages/plafond", json={"usd": 99999}, headers=X).status_code, 400, "un plafond absurde est refusé")
+pl = lucie.get("/api/marque/sazu/plateforme").json()
+egal(pl["courante"]["plateforme"]["direction_artistique"]["mise_en_scene"], "studio_permis",
+     "la responsable lit la plateforme de SA marque")
+egal(lucie.get("/api/marque/rega/plateforme").status_code, 404, "pas celle d'une autre")
+egal(lucie.post("/api/marque/sazu/plateforme/relire", json={}, headers=X).status_code, 403,
+     "relire ou faire réécrire la plateforme : le PDG")
+verifier(pdg.post("/api/marque/sazu/plateforme/relire", json={}, headers=X).json()["relue_le"], "le PDG la relit")
+r = lucie.post("/api/demander", json={"question": "Mets REGA en pause"}, headers=X).json()
+verifier(not any(a.get("fait") for a in r["actions"]), "Demander n'agit pas sur une marque hors des droits")
+r = lucie.post("/api/demander", json={"question": "Combien de commandes SAZÚ ?"}, headers=X).json()
+verifier("SAZÚ" in r["reponse"] and "client" in r["reponse"], "Demander répond avec les chiffres")
+r = pdg.post("/api/demander", json={"question": "Mets VIP Plus en pause"}, headers=X).json()
+verifier(r["actions"] and r["actions"][0]["fait"] and pdg.get("/api/moi").json()["marques"][
+    [m["id"] for m in pdg.get("/api/moi").json()["marques"]].index("vipplus")]["en_pause"],
+    "« Mets VIP Plus en pause » : fait, et annoncé")
+pdg.post("/api/marque/vipplus/reprendre", json={}, headers=X)
+egal(len(pdg.get("/api/demander").json()["fil"]), 1, "le fil de Demander est propre à chacun")
+egal(pdg.get("/api/aujourdhui").status_code, 200, "Aujourd'hui répond")
+egal(lucie.post("/api/marque/sazu/copilote", json={"actif": True}, headers=X).status_code, 403,
+     "le copilote : un réglage du PDG")
+egal(pdg.post("/api/marque/sazu/copilote", json={"actif": True}, headers=X).json()["copilote"], True,
+     "le PDG peut l'activer…")
+pdg.post("/api/marque/sazu/copilote", json={"actif": False}, headers=X)
+verifier(not any(m["validation"] for m in pdg.get("/api/moi").json()["marques"]), "… et il est désactivé partout par défaut")
+
 print("— L'écran")
 egal(anonyme.get("/").status_code, 200, "/ sert l'écran")
 egal(anonyme.get("/sw.js").headers.get("service-worker-allowed"), "/", "le service worker couvre tout le site")
@@ -174,5 +209,12 @@ manquent = [r for r in refs if f'"{r}"' not in sw]
 verifier(len(refs) >= 3 and not manquent,
          f"chaque fichier chargé par la page est dans le SHELL du service worker, même version {manquent or ''}")
 verifier(all(anonyme.get(r).status_code == 200 for r in refs), "et chacun existe sur le disque")
+sur_disque = sorted(p.stem for p in (config.STATIQUES / "js").glob("*.js"))
+charges = sorted(re.findall(r'src="/static/js/([\w-]+)\.js\?v=\d+"', page))
+egal(charges, sur_disque, "chaque quartier du disque est chargé par la page (aucun oublié, aucun fantôme)")
+egal(len(set(re.findall(r'\?v=(\d+)"', page))), 1, "tous les fichiers de la page portent la même version")
+verifier(re.findall(r'src="/static/js/([\w-]+)\.js', page)[-1] == "demarrage" and
+         re.findall(r'src="/static/js/([\w-]+)\.js', page)[1] == "socle",
+         "le socle se charge avant les quartiers, le démarrage après eux")
 
 socle.fin()

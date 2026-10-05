@@ -69,7 +69,7 @@ def creneau(sid):
 
 # ── 1. Réception ─────────────────────────────────────────────────────────
 def recevoir(marque_id: str, octets: bytes, nom_fichier: str = "", client_ref: str | None = None,
-             auteur: dict | None = None, pilier: str = "") -> dict:
+             auteur: dict | None = None, pilier: str = "", note: str = "") -> dict:
     """La photo arrive : on la range, on la lit, et la suite part en file.
     → l'asset (dict), avec `deja=True` si ce dépôt avait déjà été reçu."""
     m = acces.marque(marque_id)
@@ -105,6 +105,7 @@ def recevoir(marque_id: str, octets: bytes, nom_fichier: str = "", client_ref: s
         height=img.height, exif={k: v for k, v in exif.items() if k != "gps"},
         taken_at=images.date_prise(exif), location=exif.get("gps"),
         pillar=pilier if acces.pilier(m, pilier) else "", kind="photo", status="recu",
+        note=(note or "").strip()[:500],
         created_at=db.maintenant())
     try:
         with db.moteur().begin() as c:
@@ -360,8 +361,13 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
 
     pilier = acces.pilier(m, s["pillar"] or a["pillar"])
     contexte = contexte_du_creneau(s, m)
+    if a.get("note"):
+        # Ce que le terrain a dit en déposant : le texte peut s'en servir, ses
+        # chiffres deviennent citables (c'est un fait rapporté par l'équipe).
+        contexte["dit par l'équipe au dépôt"] = a["note"]
     lecture = a["vision"] or {}
-    textes = redaction.ecrire(m, lecture, retenus, cts, pilier, contexte, _anciens_textes(a["id"]), jour)
+    textes = redaction.ecrire(m, lecture, retenus, cts, pilier, contexte, _anciens_textes(a["id"]), jour,
+                              slot_id=s["id"])
 
     maintenant = creneaux.paris(db.maintenant())
     apres = maintenant + dt.timedelta(minutes=10)
@@ -374,10 +380,13 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
                 "pillar": s["pillar"] or a["pillar"] or "", "trigger": _declencheur(s, a),
                 "created_at": db.maintenant()}
         if not t or t["violations"]:
+            par_critique = bool(t) and all(str(x).startswith("critique") for x in t["violations"])
             pid = _inserer(base, status="refuse", text=(t or {}).get("texte", ""),
-                           error="texte refusé par le garde-fou de langage",
+                           error=("texte refusé par le Critique après trois tours" if par_critique
+                                  else "texte refusé par le garde-fou de langage"),
                            model=(t or {}).get("modele", ""), prompt_version=(t or {}).get("prompt_version", ""),
-                           guard_report={"violations": (t or {}).get("violations") or ["aucun texte produit"]})
+                           guard_report={"violations": (t or {}).get("violations") or ["aucun texte produit"],
+                                         "critique": (t or {}).get("critique")})
             journal.noter(par, "texte_refuse", "post", pid, m["id"],
                           apres={"reseau": pf, "violations": (t or {}).get("violations")})
             continue
@@ -404,7 +413,8 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
         pid = _inserer(base, status="preparation", text=t["texte"], title=t.get("titre", ""),
                        rendition_id=rendu["id"], scheduled_at=creneaux.utc(heure), model=t["modele"],
                        prompt_version=t["prompt_version"],
-                       guard_report={"violations": [], "essais": t["essais"], "traitements": rendu["traitements"]})
+                       guard_report={"violations": [], "essais": t["essais"], "traitements": rendu["traitements"],
+                                     "critique": t.get("critique")})
         lien = mesure.liens_de_publication(m, pid, pf)
         texte = redaction.poser_lien(t["texte"], pf, lien["url"])
         texte = redaction.ajouter_mentions(texte, m, (cts.get(pf) or {}).get("caption_max"))

@@ -33,7 +33,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTe
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import desc, func, select, update
 
-from alma_social import (acces, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
+from alma_social import (acces, agents, assistant, critique, ia, marque as marque_, pilotage, voix, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
                          mesure, pipeline, planificateur, rapport, relation, reseaux, securite, stockage)
 from alma_social.publieurs import upload_post
 from alma_social.publieurs.base import ErreurPublication
@@ -202,7 +202,7 @@ def logo(marque_id: str, request: Request):
 
 # ── Le dépôt ─────────────────────────────────────────────────────────────
 @app.post("/api/depot")
-async def depot(request: Request, marque: str = Form(...), pilier: str = Form(""),
+async def depot(request: Request, marque: str = Form(...), pilier: str = Form(""), note: str = Form(""),
                 photos: list[UploadFile] = File(...), refs: list[str] = Form(default=[])):
     """Une ou plusieurs photos, une marque. Chaque fichier a sa référence
     (posée par le téléphone) : un renvoi après une coupure ne crée rien."""
@@ -213,7 +213,8 @@ async def depot(request: Request, marque: str = Form(...), pilier: str = Form(""
         ref = refs[i] if i < len(refs) and refs[i] else None
         octets = await f.read()
         try:
-            a = pipeline.recevoir(m["id"], octets, f.filename or "", client_ref=ref, auteur=u, pilier=pilier)
+            a = pipeline.recevoir(m["id"], octets, f.filename or "", client_ref=ref, auteur=u, pilier=pilier,
+                                  note=note)
             out.append({"ref": ref, "id": a["id"], "deja": bool(a.get("deja")), "ok": True})
         except ValueError as e:
             out.append({"ref": ref, "ok": False, "erreur": str(e)})
@@ -363,22 +364,13 @@ async def pause(marque_id: str, request: Request):
         corps = await request.json()
     except ValueError:
         corps = {}
-    jusqua = db.maintenant() + dt.timedelta(hours=48)
-    raison = (corps.get("raison") or "pause 48 h")[:200]
-    with db.moteur().begin() as c:
-        c.execute(update(db.brands).where(db.brands.c.id == m["id"]).values(paused_until=jusqua, paused_reason=raison))
-    journal.noter(_qui(u), "pause", "brand", m["id"], m["id"], apres={"jusqua": jusqua, "raison": raison})
-    return _json({"en_pause": True, "jusqua": jusqua})
+    return _json(pilotage.pause(m, _qui(u), 48, corps.get("raison") or ""))
 
 
 @app.post("/api/marque/{marque_id}/reprendre")
 def reprendre(marque_id: str, request: Request):
     u = _moi(request)
-    m = _voir(u, marque_id)
-    with db.moteur().begin() as c:
-        c.execute(update(db.brands).where(db.brands.c.id == m["id"]).values(paused_until=None, paused_reason=None))
-    journal.noter(_qui(u), "reprise", "brand", m["id"], m["id"])
-    return _json({"en_pause": False, "repris": pipeline.reprendre(_qui(u), m["id"])})
+    return _json(pilotage.reprendre(_voir(u, marque_id), _qui(u)))
 
 
 @app.post("/api/carte")
@@ -542,6 +534,8 @@ async def repondre(conv_id: int, request: Request):
     texte = ((await request.json()).get("texte") or "").strip()
     if not texte:
         raise HTTPException(400, "La réponse est vide.")
+    if cv.get("reply") and cv["reply"].strip() != texte:
+        voix.noter_correction(cv["brand_id"], "reponse", cv["reply"], texte, _qui(u))   # la voix apprend
     return _json({"ok": relation.repondre(conv_id, texte, par=_qui(u))})
 
 
@@ -566,6 +560,8 @@ async def repondre_avis(avis_id: int, request: Request):
     texte = ((await request.json()).get("texte") or r["draft"] or "").strip()
     if not texte:
         raise HTTPException(400, "La réponse est vide.")
+    if r.get("draft") and r["draft"].strip() != texte:
+        voix.noter_correction(r["brand_id"], "avis", r["draft"], texte, _qui(u))       # la voix apprend
     return _json({"ok": relation.envoyer_reponse_avis(avis_id, texte, _qui(u))})
 
 
@@ -943,6 +939,8 @@ def sante(request: Request):
         "publies_24h": publies_24h, "echecs_7j": echecs, "derniers_echecs": derniers,
         "jetons_qui_expirent": expirent, "comptes_a_relier": a_relier, "stock": stock, "alertes": alertes_,
         "bac_a_sable": journal.bac_a_sable(), "arret_general": journal.arret_general(),
+        "ia": ia.couts() if u["role"] == "pdg" else None,
+        "critique": critique.taux(),
         "cles": {"anthropic": bool(config.cle_anthropic()), "upload_post": bool(config.cle_upload_post()),
                  "webhook": bool(_secret_webhook()), "chiffrement": bool(config.cle_chiffrement()),
                  "nettoyage": bool(config.cle_nettoyage()), "courrier": bool(config.SMTP["hote"]) and not config.courrier_en_test()},
@@ -1007,6 +1005,119 @@ def apercu_rapport(request: Request):
 
 
 # ── L'écran ──────────────────────────────────────────────────────────────
+# ── v3 : l'équipe, la plateforme de marque, Demander, Aujourd'hui ─────────
+@app.get("/api/equipe")
+def equipe(request: Request):
+    """Les agents, leur modèle, leurs coûts, la sévérité du Critique."""
+    u = _moi(request)
+    _pdg(u)
+    return _json({"agents": agents.tableau(), "niveaux": agents.NIVEAUX, "couts": ia.couts(),
+                  "critique": critique.taux(), "cle": ia.disponible()})
+
+
+@app.post("/api/reglages/agents")
+async def regler_agent(request: Request):
+    u = _moi(request)
+    _pdg(u)
+    c_ = await request.json()
+    cle, niveau = c_.get("agent", ""), c_.get("niveau", "")
+    if cle not in agents.EQUIPE or niveau not in agents.NIVEAUX:
+        raise HTTPException(400, "Agent ou niveau inconnu.")
+    regles = dict(journal.lire("agents.modeles") or {})
+    regles[cle] = niveau
+    journal.ecrire("agents.modeles", regles, par=_qui(u))
+    return _json({"agent": cle, "modele": agents.modele(cle)})
+
+
+@app.post("/api/reglages/plafond")
+async def regler_plafond(request: Request):
+    """Le plafond IA du mois : une dépense, donc un geste du PDG, journalisé."""
+    u = _moi(request)
+    _pdg(u)
+    usd = float((await request.json()).get("usd"))
+    if not 0 <= usd <= 5000:
+        raise HTTPException(400, "Plafond entre 0 et 5 000 $.")
+    journal.ecrire("ia.plafond_mois_usd", usd, par=_qui(u))
+    return _json({"plafond_usd": ia.plafond_usd(), "mois_usd": ia.depense_du_mois()})
+
+
+@app.post("/api/marque/{marque_id}/copilote")
+async def copilote(marque_id: str, request: Request):
+    u = _moi(request)
+    _pdg(u)
+    return _json(pilotage.copilote(_voir(u, marque_id), bool((await request.json()).get("actif")), _qui(u)))
+
+
+@app.get("/api/marque/{marque_id}/plateforme")
+def plateforme(marque_id: str, request: Request):
+    u = _moi(request)
+    m = _voir(u, marque_id)
+    from alma_social import carnet
+    return _json({"courante": marque_.courante(m["id"]), "versions": marque_.versions(m["id"]),
+                  "voix": m.get("voice") or {}, "corrections": voix.historique(m["id"]),
+                  "lecons": carnet.lecons(m["id"], toutes=True), "faits": m.get("facts") or {},
+                  "kit": m.get("kit") or {}, "a_completer": m.get("todo") or [],
+                  "copilote": bool(m.get("requires_approval"))})
+
+
+@app.post("/api/marque/{marque_id}/plateforme/{geste}")
+async def plateforme_geste(marque_id: str, geste: str, request: Request):
+    u = _moi(request)
+    _pdg(u)
+    m = _voir(u, marque_id)
+    try:
+        c_ = await request.json()
+    except ValueError:
+        c_ = {}
+    if geste == "rediger":
+        return _json(marque_.rediger(m["id"], _qui(u), (c_.get("consigne") or "")[:1000]))
+    if geste == "corriger":
+        return _json(marque_.corriger(m["id"], c_.get("champs") or {}, _qui(u)))
+    if geste == "relire":
+        return _json(marque_.relire(m["id"], _qui(u)))
+    raise HTTPException(404, "Geste inconnu.")
+
+
+@app.post("/api/demander")
+async def demander(request: Request):
+    u = _moi(request)
+    return _json(assistant.demander(u, (await request.json()).get("question") or ""))
+
+
+@app.get("/api/demander")
+def demandes(request: Request):
+    return _json({"fil": assistant.historique(_moi(request))})
+
+
+@app.get("/api/aujourdhui")
+def aujourdhui(request: Request, marque: str = ""):
+    """Ce qui sort aujourd'hui et demain : visuels et textes, heure par heure."""
+    u = _moi(request)
+    ids = [_voir(u, marque)["id"]] if marque else securite.marques_de(u)
+    debut = creneaux.utc(dt.datetime.combine(acces.aujourdhui(), dt.time(0, 0), tzinfo=creneaux.PARIS))
+    fin = debut + dt.timedelta(days=2)
+    with db.moteur().begin() as c:
+        lignes = db.lignes(c.execute(select(db.posts).where(
+            db.posts.c.brand_id.in_(ids),
+            ((db.posts.c.scheduled_at >= debut) & (db.posts.c.scheduled_at < fin))
+            | ((db.posts.c.published_at >= debut) & (db.posts.c.published_at < fin)))
+            .order_by(db.posts.c.scheduled_at)))
+    out = []
+    for p in lignes:
+        if p["status"] in ("annule", "retire"):
+            continue
+        out.append({"id": p["id"], "marque": p["brand_id"], "reseau": p["platform"],
+                    "nom_reseau": reseaux.NOMS.get(p["platform"], p["platform"]), "statut": p["status"],
+                    "heure": p["published_at"] or p["scheduled_at"], "texte": p["text"],
+                    "vignette": f"/api/photo/{p['asset_id']}/vignette" if p["asset_id"] else "",
+                    "apercu": f"/apercu/{p['id']}", "lien": p["permalink"],
+                    "note": ((p["guard_report"] or {}).get("critique") or {}).get("note"),
+                    "juge": ((p["guard_report"] or {}).get("critique") or {}).get("juge"),
+                    "simule": bool(p["simulated"])})
+    return _json({"publications": out, "bac_a_sable": journal.bac_a_sable()})
+
+
+
 @app.get("/")
 def accueil():
     return FileResponse(config.STATIQUES / "index.html", headers={"Cache-Control": "no-cache"})

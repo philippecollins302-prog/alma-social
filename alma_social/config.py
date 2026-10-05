@@ -63,7 +63,7 @@ def dossier_fichiers() -> pathlib.Path:
 # ── Le modèle de langue ──────────────────────────────────────────────────
 # Un seul réglage, lisible dans l'environnement. Les textes générés sont
 # stockés avec le modèle ET la version du prompt qui les ont produits.
-MODELE = _env("SOCIAL_MODELE", "claude-opus-5-5")
+MODELE = _env("SOCIAL_MODELE", "claude-opus-5-5")     # le niveau « fort » (agents.py)
 EFFORT = _env("SOCIAL_EFFORT", "low")          # la constance avant l'inspiration
 
 

@@ -79,3 +79,49 @@ def fin():
     if _ko:
         print("ROUGES :\n  - " + "\n  - ".join(_ko))
         sys.exit(1)
+
+
+# ── Un faux Claude, pour les bancs qui veulent un modèle qui répond ──────
+class _Usage:
+    def __init__(self, i=1200, o=400, lu=0, ecrit=0):
+        self.input_tokens, self.output_tokens = i, o
+        self.cache_read_input_tokens, self.cache_creation_input_tokens = lu, ecrit
+
+
+class _Reponse:
+    def __init__(self, obj, modele, stop="end_turn", usage=None):
+        self.parsed_output, self.model, self.stop_reason = obj, modele, stop
+        self.usage = usage or _Usage()
+
+
+class FauxClaude:
+    """`ia.CLIENT = FauxClaude({"Notation": fonction(params) -> objet})`.
+
+    Chaque schéma demandé est servi par la fonction qu'on lui a apprise ; un
+    schéma inconnu FAIT ÉCHOUER le banc — un faux qui répond n'importe quoi
+    laisserait passer un appel que personne n'a prévu. Les paramètres reçus
+    sont gardés dans `.appels` pour qu'un banc vérifie ce qui est PARTI.
+    """
+
+    def __init__(self, reponses: dict):
+        self.reponses = reponses
+        self.appels = []
+        faux = self
+
+        class _Messages:
+            def parse(self, **params):
+                faux.appels.append(params)
+                nom = params["output_format"].__name__
+                if nom not in faux.reponses:
+                    raise AssertionError(f"schéma {nom} non prévu par le banc")
+                r = faux.reponses[nom](params)
+                return r if isinstance(r, _Reponse) else _Reponse(r, params["model"])
+
+        class _Beta:
+            messages = _Messages()
+
+        self.beta = _Beta()
+
+
+def reponse(obj, modele="claude-opus-5-5", stop="end_turn", usage=None):
+    return _Reponse(obj, modele, stop, usage)

@@ -16,6 +16,15 @@ application chez l'hébergeur. Il ne dépend d'aucun autre projet du groupe.
 
 ---
 
+## Le cerveau (v3)
+
+Quatorze agents (`alma_social/agents.py`) passent tous par `ia.appeler` : modèle par agent,
+contexte de marque en cache, coût inscrit dans `agent_runs`, plafond mensuel. Chaque texte
+passe le garde-fou puis le Critique (`critique.py`, seuil 80, trois tours). Les plateformes
+de marque (`marque.py`, graines dans `graines/plateformes.json`) sont lues par tous les
+agents. Sans clé Claude, chaque agent a un repli déterministe, et l'écran Santé le dit.
+L'audit de la v1 : `docs/AUDIT.md`.
+
 ## Démarrer en cinq minutes (poste de développement)
 
 ```bash

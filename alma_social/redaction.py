@@ -18,9 +18,9 @@ import re
 
 from pydantic import BaseModel, Field
 
-from . import garde_fous, ia, reseaux
+from . import critique, garde_fous, ia, marque as marque_, reseaux
 
-VERSION_PROMPT = "redaction-v1"
+VERSION_PROMPT = "redaction-v2"
 
 
 class TexteReseau(BaseModel):
@@ -85,12 +85,23 @@ def systeme(marque: dict, contraintes: dict, plateformes: list, aujourd_hui: dt.
                        "équilibré, riche en, détox, léger, vitaminé…). Décris ce qu'il y a dans "
                        "l'assiette, pas ce que ça fait au corps. Pour les allergènes, renvoie à la "
                        "fiche produit de l'application de livraison.")
-    return f"""Tu es le directeur de la communication de « {marque['name']} » : {marque.get('activity', '')}.
+    plateforme_txt = marque_.contexte(marque)
+    longueur = {"court": "Textes COURTS : chaque mot gagne sa place.", "long": "Textes développés, sans délayer.",
+                }.get((marque.get("voice") or {}).get("target_length", ""), "")
+    return f"""Tu es le meilleur rédacteur social media de France, au service de « {marque['name']} » : {marque.get('activity', '')}.
 Zone : {marque.get('zone', '')}. Clientèle : {marque.get('audience', '')}.
 Tu écris en FRANÇAIS les publications de la marque, une par réseau.
 
 VOIX DE LA MARQUE
 {_voix(marque)}
+{longueur}
+
+{plateforme_txt}
+
+LA BARRE : chaque texte sera noté sur 100 par un critique sévère (arrêt du pouce, clarté,
+voix, preuve concrète et locale, appel à l'action, natif du réseau, risque). Sous 80, il
+revient. La PREMIÈRE LIGNE fait tout : elle ouvre sur ce qu'on voit ou sur un détail qui
+intrigue — jamais sur le nom de la marque, jamais sur « Découvrez » ou « Nouvelle publication ».
 
 CHIFFRES — tu n'as le droit d'écrire QUE les chiffres ci-dessous (et les dates ou heures
 données dans le contexte de la publication). Aucun autre nombre, aucun pourcentage,
@@ -142,17 +153,21 @@ def _contenu(lecture: dict, pilier: dict | None, contexte: dict, anciens: list |
 
 def ecrire(marque: dict, lecture: dict, plateformes: list, contraintes: dict,
            pilier: dict | None = None, contexte: dict | None = None,
-           anciens: list | None = None, aujourd_hui: dt.date | None = None):
-    """→ {plateforme: {texte, titre, hashtags, modele, prompt_version, violations, essais}}.
+           anciens: list | None = None, aujourd_hui: dt.date | None = None,
+           slot_id: int | None = None):
+    """→ {plateforme: {texte, titre, hashtags, modele, prompt_version, violations, essais, critique}}.
 
-    Un texte avec `violations` non vide ne doit PAS partir : l'appelant le
-    refuse et le dit au journal.
+    Trois tours au plus (§ 11.1). À chaque tour, chaque texte passe d'abord
+    le GARDE-FOU (ce qui est interdit), puis le CRITIQUE (ce qui est
+    médiocre). Ce qui échoue revient au rédacteur avec les remarques exactes.
+    Au troisième échec, le texte porte des `violations` : l'appelant le
+    refuse, et la photo retourne à la banque avec la raison.
     """
     aujourd_hui = aujourd_hui or dt.date.today()
     resultats = {}
     restants = list(plateformes)
     corrections = None
-    for essai in range(3):
+    for essai in range(critique.TOURS):
         if not restants:
             break
         try:
@@ -160,7 +175,8 @@ def ecrire(marque: dict, lecture: dict, plateformes: list, contraintes: dict,
                 systeme(marque, contraintes, restants, aujourd_hui),
                 [{"type": "text", "text": _contenu(lecture, pilier, contexte, anciens, corrections)
                   + "\n\nÉcris un texte pour chacun de ces réseaux : " + ", ".join(restants)}],
-                Redaction, max_tokens=8000, usage="redaction")
+                Redaction, max_tokens=8000, agent="redacteur", marque_id=marque["id"],
+                objet=f"slot:{slot_id}" if slot_id else "")
             recus = {t.platform: t for t in obj.textes}
         except ia.SansCle:
             modele, recus = "gabarit-local", {}
@@ -170,6 +186,7 @@ def ecrire(marque: dict, lecture: dict, plateformes: list, contraintes: dict,
         corrections = {}
         tous = {pf: r["texte"] for pf, r in resultats.items()}
         tous.update({pf: t.texte for pf, t in recus.items()})
+        dernier = essai == critique.TOURS - 1 or modele == "gabarit-local"
         for pf in list(restants):
             t = recus.get(pf)
             if t is None:
@@ -178,25 +195,24 @@ def ecrire(marque: dict, lecture: dict, plateformes: list, contraintes: dict,
             texte = nettoyer(t.texte, pf)
             v = garde_fous.verifier_texte(texte, pf, marque, contraintes.get(pf), contexte,
                                           tous, aujourd_hui)
+            j = critique.noter(marque, pf, texte, lecture, None, v, objet=f"slot:{slot_id}" if slot_id else "")
+            passe = not v and j["note"] >= j["seuil"]
+            decision = "passe" if passe else ("banque" if dernier else "reecrire")
+            critique.enregistrer(marque, pf, essai + 1, j, decision, slot_id=slot_id)
             resultats[pf] = {"texte": texte, "titre": t.titre.strip()[:100], "hashtags": t.hashtags,
                              "modele": modele, "prompt_version": VERSION_PROMPT,
-                             "violations": v, "essais": essai + 1}
-            if not v:
+                             "violations": v, "essais": essai + 1,
+                             "critique": {"note": j["note"], "juge": j["juge"], "remarques": j["remarques"][:5]}}
+            if passe:
                 restants.remove(pf)
             else:
-                corrections[pf] = v
+                corrections[pf] = v + j["remarques"][:4]
+                if not v:
+                    resultats[pf]["violations"] = [
+                        f"critique : {j['note']}/100 (seuil {j['seuil']}) — "
+                        + (j["remarques"][0] if j["remarques"] else j.get("verdict", ""))]
         if modele == "gabarit-local":
             break
-    # Dernier filet : la version sûre écrite par le code, si elle passe.
-    for pf in restants:
-        g = gabarit(marque, lecture, pf, pilier, contexte)
-        texte = nettoyer(g["texte"], pf)
-        autres = {k: r["texte"] for k, r in resultats.items() if k != pf}
-        v = garde_fous.verifier_texte(texte, pf, marque, contraintes.get(pf), contexte, autres, aujourd_hui)
-        if not v:
-            resultats[pf] = {"texte": texte, "titre": g["titre"], "hashtags": g["hashtags"],
-                             "modele": "gabarit-local", "prompt_version": VERSION_PROMPT,
-                             "violations": [], "essais": resultats.get(pf, {}).get("essais", 0) + 1}
     return resultats
 
 
@@ -274,8 +290,12 @@ def gabarit(marque: dict, lecture: dict, plateforme: str, pilier: dict | None, c
     faits = [str(f) for f in (marque.get("facts") or {}).values()]
     fait = _choix(faits, graine) if faits else ""
     emoji = " " + _choix(v.get("emoji_set") or ["✨"], graine) if v.get("emojis") else ""
-    tete = evenement or _choix(
-        [f"{sujet}, chez {nom}.", f"Aujourd'hui : {sujet[:1].lower() + sujet[1:]}.", f"{nom} — {sujet}."], graine)
+    # La première ligne ouvre sur CE QU'ON VOIT (la lecture de la photo), sinon
+    # sur une accroche de la plateforme de marque — jamais sur une formule creuse
+    # ni sur le nom de la marque : le Critique les refuse.
+    vu = _phrase((lecture or {}).get("sujet", ""))
+    accroches = ((marque_.courante(marque["id"]) or {}).get("plateforme") or {}).get("accroches") or []
+    tete = evenement or vu or _choix(accroches, graine) or f"{sujet}."
     ht = lambda n: " ".join("#" + t for t in tags[:n])
     if plateforme == "instagram":
         texte = f"{tete}{emoji}\n\n{_phrase(detail)}\n\n{cta} : lien en bio.\n\n{ht(6)}"
@@ -301,7 +321,7 @@ def gabarit(marque: dict, lecture: dict, plateforme: str, pilier: dict | None, c
         texte = f"{sujet} en images{emoji}\n{cta2} : {{LIEN}}\n#Shorts {ht(2)}"
         hashtags = ["Shorts"] + tags[:2]
     elif plateforme == "threads":
-        texte = f"{_choix(['Petit aperçu', 'Instant du jour', 'Vu aujourd’hui'], graine)} chez {nom}{emoji} {{LIEN}}"
+        texte = f"{tete}{emoji} {{LIEN}}"
         hashtags = []
     elif plateforme == "pinterest":
         texte = f"Idée {sujet[:1].lower() + sujet[1:]} : {detail or activite}. {nom}, {zone}."

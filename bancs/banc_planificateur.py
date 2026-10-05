@@ -11,7 +11,8 @@ socle.figer(2026, 10, 4, 16)
 r = graines.semer()
 egal(sorted(r["marques"]), ["alma", "lms", "lms-paca", "rega", "sazu", "vipplus"], "six marques semées")
 egal(r["campagnes"] != [], True, "la campagne d'ouverture de SAZÚ est créée")
-egal(graines.semer(), {"contraintes": 0, "marques": [], "utilisateurs": [], "campagnes": []},
+egal(r["plateformes"], 6, "les six plateformes de marque sont semées")
+egal(graines.semer(), {"contraintes": 0, "marques": [], "utilisateurs": [], "campagnes": [], "plateformes": 0},
      "semer deux fois ne crée rien de plus")
 sazu = acces.marque("sazu")
 egal(sazu["active_platforms"], ["instagram", "facebook", "tiktok", "gbp"],
