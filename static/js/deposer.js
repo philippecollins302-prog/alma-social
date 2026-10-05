@@ -89,7 +89,7 @@ async function derniersDepots() {
   const ou = $("#derniers");
   try {
     const j = await api("/api/photos?limite=8");
-    ou.dataset.photos = JSON.stringify(j.photos.flatMap(p => p.publications.map(x => [x.id, x.reseau, x.texte])));
+    ou.dataset.photos = JSON.stringify(j.photos.flatMap(p => p.publications.map(x => [x.id, x.reseau, x.texte, x.format])));
     ou.innerHTML = j.photos.map(p => `
       <article class="carte photo">
         <img alt="" loading="lazy" src="${esc(p.vignette)}">
@@ -118,7 +118,7 @@ async function actionPhoto(e) {
   if (t.dataset.apercu) {
     e.preventDefault();
     const infos = JSON.parse(t.closest("[data-photos]")?.dataset.photos || "[]").find(x => String(x[0]) === t.dataset.apercu) || [];
-    return dire(`<h3>${esc(infos[1] || "")}</h3><img alt="" src="/apercu/${esc(t.dataset.apercu)}"><pre class="texte">${esc(infos[2] || "")}</pre>`);
+    return montrerApercu(t.dataset.apercu, infos[1], infos[2], infos[3]);
   }
   try {
     if (t.dataset.retirer) {

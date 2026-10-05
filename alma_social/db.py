@@ -178,6 +178,7 @@ renditions = Table(
     Column("treatments", JSON, default=list),
     Column("cache_key", String(64), unique=True, nullable=False),
     Column("sha256", String(64), default=""),
+    Column("duration_s", Float, nullable=True),          # vidéo : la vraie durée (montage du studio)
     Column("created_at", DateTime, default=maintenant),
 )
 
@@ -273,6 +274,9 @@ posts = Table(
     Column("simulated", Boolean, default=False),
     Column("sent_image_sha", String(64), default=""),
     Column("request_ref", String(120), default=""),      # identifiant de l'envoi chez l'agrégateur
+    Column("post_format", String(12), default="image"),  # image | video | reel | carrousel | avant_apres
+    Column("media_job_id", Integer, nullable=True),      # le montage du studio qui l'illustre
+    Column("extra_renditions", JSON, default=list),      # carrousel : les vues 2…n, dans l'ordre
     Column("created_at", DateTime, default=maintenant),
 )
 
@@ -595,6 +599,16 @@ media_jobs = Table(
     Column("score", Integer, nullable=True),             # potentiel estimé
     Column("traitements", JSON, default=list),           # ce qui a été fait à l'image, dans l'ordre
     Column("erreur", Text, default=""),
+    Column("created_at", DateTime, default=maintenant),
+)
+
+rehearsals = Table(
+    "rehearsals", meta,                                  # la répétition générale d'une campagne
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("campaign_id", Integer, nullable=False),
+    Column("etapes", JSON, default=list),                # par étape : visuel, textes, verdicts
+    Column("resume", JSON, default=dict),
+    Column("par", String(120), default=""),
     Column("created_at", DateTime, default=maintenant),
 )
 

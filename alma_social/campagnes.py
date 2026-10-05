@@ -130,6 +130,12 @@ def carte_pour(m: dict, s: dict):
     et la date de l'événement en détail. Le nom de la marque n'y est jamais
     retapé (son logo, lui, apparaît quand la marque le permet)."""
     from . import pipeline
+    titre, accroche, detail = parametres_carte(m, s)
+    return pipeline.creer_carte(m, titre, accroche, detail, s.get("pillar") or "")
+
+
+def parametres_carte(m: dict, s: dict) -> tuple:
+    """(titre, accroche, détail) de la carte d'une étape — partagé avec la répétition."""
     ca = campagne(s["campaign_id"]) if s.get("campaign_id") else None
     titre = s.get("campaign_step") or "Bientôt"
     if titre == "Jour J" and ca and ca["kind"] == "ouverture":
@@ -139,4 +145,4 @@ def carte_pour(m: dict, s: dict):
     adresse = (m.get("links") or {}).get("adresse_publique")
     if adresse and detail:
         detail = f"{detail} · {adresse}"
-    return pipeline.creer_carte(m, titre, accroche, detail, s.get("pillar") or "")
+    return titre, accroche, detail

@@ -137,7 +137,9 @@ class UploadPost(Publisher):
         if post.is_video:
             chemin, fichiers = "/upload", [_fichier(post.media_path, "video")]
         else:
-            chemin, fichiers = "/upload_photos", [_fichier(post.media_path, "photos[]")]
+            # Plusieurs `photos[]` : Upload-Post publie un carrousel, dans l'ordre envoyé.
+            chemin = "/upload_photos"
+            fichiers = [_fichier(x, "photos[]") for x in [post.media_path] + list(post.extra_paths or [])]
         code, rep = _http("POST", chemin, self.cle, data=champs, files=fichiers,
                           entetes={"Idempotency-Key": f"alma-post-{post.post_id}"})
         return self._lire_envoi(code, rep, post.post_id)

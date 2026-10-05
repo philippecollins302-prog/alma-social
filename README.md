@@ -194,6 +194,21 @@ Après le premier démarrage :
 Instagram, TikTok et Threads n'ont pas d'API de suppression : « retirer
 partout » le dit, et donne le lien de chaque publication à retirer à la main.
 
+## Le studio et la répétition générale
+
+**Plus → Studio.** Trois photos SAZÚ déposées d'un coup deviennent seules un
+Reel (accroche, mouvements, sous-titres, fin sur l'appel) et un carrousel
+(couverture, vues numérotées, appel à l'action) : le Reel part sur Instagram et
+TikTok, le carrousel sur Facebook. « Fabriquer un montage » en demande d'autres
+— un avant/après de chantier, par exemple. Le fond studio n'existe que pour
+SAZÚ : un chantier garde son décor.
+
+**La répétition** rejoue toute une campagne avant qu'elle parte : l'ouverture
+SAZÚ (30/10 → 29/11), douze étapes, chaque visuel, chaque texte réseau par
+réseau, chaque heure, le logo caché jusqu'au 13/11 à 18 h. Rien n'est publié.
+Une étape sans photo du bon sujet part en carte à la charte : déposer une
+photo la remplace.
+
 ## Pour aller plus loin
 
 - `DECISIONS.md` — chaque choix technique, en une ligne, avec sa raison ;

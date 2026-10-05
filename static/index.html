@@ -11,7 +11,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/static/icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icone-192.png">
-<link rel="stylesheet" href="/static/app.css?v=3">
+<link rel="stylesheet" href="/static/app.css?v=4">
 </head>
 <body>
 <!-- La porte : un code personnel, rien d'autre. -->
@@ -61,6 +61,7 @@
   <main id="v-boite" class="vue" hidden></main>
   <main id="v-resultats" class="vue" hidden></main>
   <main id="v-demander" class="vue" hidden></main>
+  <main id="v-studio" class="vue" hidden></main>
   <main id="v-marques" class="vue" hidden></main>
   <main id="v-sante" class="vue" hidden></main>
   <main id="v-reglages" class="vue" hidden></main>
@@ -77,6 +78,7 @@
 <dialog id="tiroir" class="tiroir">
   <div class="grille-plus">
     <button data-aller="calendrier"><i>▦</i>Calendrier</button>
+    <button data-aller="studio"><i>▶</i>Studio</button>
     <button data-aller="demander"><i>✦</i>Demander</button>
     <button data-aller="marques"><i>◆</i>Marques</button>
     <button data-aller="sante"><i>♥</i>Santé</button>
@@ -87,17 +89,18 @@
 
 <dialog id="dialogue"><div id="dialogue-corps"></div><form method="dialog"><button class="secondaire large">Fermer</button></form></dialog>
 
-<script src="/static/js/attente.js?v=3"></script>
-<script src="/static/js/socle.js?v=3"></script>
-<script src="/static/js/deposer.js?v=3"></script>
-<script src="/static/js/aujourdhui.js?v=3"></script>
-<script src="/static/js/calendrier.js?v=3"></script>
-<script src="/static/js/boite.js?v=3"></script>
-<script src="/static/js/resultats.js?v=3"></script>
-<script src="/static/js/demander.js?v=3"></script>
-<script src="/static/js/marques.js?v=3"></script>
-<script src="/static/js/sante.js?v=3"></script>
-<script src="/static/js/reglages.js?v=3"></script>
-<script src="/static/js/demarrage.js?v=3"></script>
+<script src="/static/js/attente.js?v=4"></script>
+<script src="/static/js/socle.js?v=4"></script>
+<script src="/static/js/deposer.js?v=4"></script>
+<script src="/static/js/aujourdhui.js?v=4"></script>
+<script src="/static/js/calendrier.js?v=4"></script>
+<script src="/static/js/boite.js?v=4"></script>
+<script src="/static/js/resultats.js?v=4"></script>
+<script src="/static/js/demander.js?v=4"></script>
+<script src="/static/js/studio.js?v=4"></script>
+<script src="/static/js/marques.js?v=4"></script>
+<script src="/static/js/sante.js?v=4"></script>
+<script src="/static/js/reglages.js?v=4"></script>
+<script src="/static/js/demarrage.js?v=4"></script>
 </body>
 </html>

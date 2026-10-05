@@ -24,6 +24,11 @@ Documentation consultée : https://docs.upload-post.com/llms-full.txt, https://d
 https://docs.upload-post.com/api/google-business-reviews, https://docs.upload-post.com/guides/post-to-linkedin-api
 — notes complètes dans `docs/recherche/upload-post-api.md`.
 
+Formats envoyés par le studio : carrousel = plusieurs `photos[]` sur `/upload_photos`, dans
+l'ordre (Instagram 10 vues au plus, LinkedIn 20) ; Reel = `/upload` avec `video` et, pour
+Instagram, `media_type=REELS`. Les publieurs Ayrshare et Direct n'envoient encore que la
+première vue d'un carrousel.
+
 | Réseau | Par Upload-Post | Réglage à poser une fois (Réglages → Comptes) | Limite connue |
 |---|---|---|---|
 | Instagram (feed, Reels, Stories) | oui | — | 50 publications/jour/compte ; pas de retrait par API |

@@ -271,7 +271,7 @@ def gabarit(marque: dict, lecture: dict, plateforme: str, pilier: dict | None, c
     v = marque.get("voice") or {}
     tu = v.get("address") == "tu"
     nom = marque["name"]
-    sujet = (pilier or {}).get("label") or "Nouvelle publication"
+    sujet = (pilier or {}).get("label") or ""
     detail = (pilier or {}).get("description") or ""
     graine = f"{nom}{plateforme}{sujet}{(lecture or {}).get('sujet', '')}"
     tags = [h.lstrip("#") for h in (v.get("hashtags") or [])]
@@ -293,18 +293,42 @@ def gabarit(marque: dict, lecture: dict, plateforme: str, pilier: dict | None, c
     # La première ligne ouvre sur CE QU'ON VOIT (la lecture de la photo), sinon
     # sur une accroche de la plateforme de marque — jamais sur une formule creuse
     # ni sur le nom de la marque : le Critique les refuse.
-    vu = _phrase((lecture or {}).get("sujet", ""))
-    accroches = ((marque_.courante(marque["id"]) or {}).get("plateforme") or {}).get("accroches") or []
+    vu = "" if (lecture or {}).get("simule") else _phrase((lecture or {}).get("sujet", ""))
+    plateforme_ = (marque_.courante(marque["id"]) or {}).get("plateforme") or {}
+    # Une accroche chiffrée (« Jour 1 → livraison ») n'est sûre que sous la
+    # plume du modèle, qui sait d'où vient le chiffre : le gabarit les évite.
+    accroches = [x for x in plateforme_.get("accroches") or [] if not re.search(r"\d", x)]
+    if marque_.mise_en_scene(marque) != "studio_permis":
+        # Une réalisation : « Ce mur porte désormais trois étages » serait une
+        # affirmation sur CE chantier, que le gabarit ne peut pas vérifier.
+        # Les accroches d'une marque de chantiers restent au modèle, qui voit la photo.
+        accroches = []
     tete = evenement or vu or _choix(accroches, graine) or f"{sujet}."
+    # La promesse de la plateforme de marque parle AU CLIENT ; la fiche
+    # « activité » est une description interne (« dark kitchen… ») qu'on ne
+    # recopie pas dans une légende.
+    promesse = _phrase(plateforme_.get("promesse") or "") or f"{_phrase(activite)} {zone}."
+    # Le titre court (TikTok, Google, YouTube) : l'accroche de l'étape ou de la
+    # photo, jamais « Nouvelle publication ».
+    court = (ctx.get("sujet proposé") if ctx.get("étape") else "") or vu or (pilier or {}).get("label") \
+        or _choix(accroches, graine + "c") or nom
+    court = court.strip().rstrip(".")
+    sujet = (pilier or {}).get("label") or court
     ht = lambda n: " ".join("#" + t for t in tags[:n])
     if plateforme == "instagram":
-        texte = f"{tete}{emoji}\n\n{_phrase(detail)}\n\n{cta} : lien en bio.\n\n{ht(6)}"
+        corps = _phrase(detail) or _phrase(fait)
+        if evenement and corps and len(set(re.findall(r"\w{4,}", corps.lower()))
+                                       & set(re.findall(r"\w{4,}", evenement.lower()))) >= 3:
+            corps = ""          # le fait redit le rendez-vous déjà annoncé en tête
+        texte = f"{tete}{emoji}\n\n" + (f"{corps}\n\n" if corps else "") + f"{cta} : lien en bio.\n\n{ht(6)}"
         hashtags = tags[:6]
     elif plateforme == "tiktok":
-        texte = f"{('Regarde' if tu else 'Regardez')} 👀 {sujet}{emoji}\n{cta2} : lien en bio.\n{ht(4)}"
+        autre = [f for f in faits if _phrase(f) != _phrase(fait)]
+        corps = _phrase(_choix(autre, graine + "t")) if autre else promesse
+        texte = f"{court}{emoji} 👀\n{corps}\n{cta2} : lien en bio.\n{ht(4)}"
         hashtags = tags[:4]
     elif plateforme == "facebook":
-        texte = f"{tete}\n\n{_phrase(activite)} {zone}.\n\n{cta} : {{LIEN}}"
+        texte = f"{tete}\n\n{promesse}\n\n{cta} : {{LIEN}}"
         hashtags = []
     elif plateforme == "linkedin":
         texte = (f"{sujet} : {detail[:1].lower() + detail[1:] if detail else 'notre savoir-faire'}.\n\n"
@@ -315,7 +339,7 @@ def gabarit(marque: dict, lecture: dict, plateforme: str, pilier: dict | None, c
                  f"{_phrase(detail)}\n\n{cta2} → {{LIEN}}")
         hashtags = []
     elif plateforme == "gbp":
-        texte = f"{sujet} — {zone}.\n" + (f"{_phrase(fait)}\n" if fait else "") + f"{_phrase(cta)}"
+        texte = f"{court} — {zone}.\n" + (f"{_phrase(fait)}\n" if fait else "") + f"{_phrase(cta)}"
         hashtags = []
     elif plateforme == "youtube":
         texte = f"{sujet} en images{emoji}\n{cta2} : {{LIEN}}\n#Shorts {ht(2)}"

@@ -33,7 +33,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, PlainTe
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import desc, func, select, update
 
-from alma_social import (acces, agents, assistant, critique, ia, marque as marque_, pilotage, voix, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
+from alma_social import (acces, agents, assistant, critique, ia, marque as marque_, pilotage, repetition, studio, voix, alertes, campagnes, config, creneaux, db, file, graines, horloge, images, journal,
                          mesure, pipeline, planificateur, rapport, relation, reseaux, securite, stockage)
 from alma_social.publieurs import upload_post
 from alma_social.publieurs.base import ErreurPublication
@@ -223,7 +223,7 @@ async def depot(request: Request, marque: str = Form(...), pilier: str = Form(""
 
 _ETATS = {"recu": "Reçue — lecture en cours", "banque": "En banque : elle sortira au prochain créneau libre",
           "programme": "Programmée", "publie": "Publiée", "refuse": "Écartée", "quarantaine": "Mise de côté",
-          "retire": "Retirée partout"}
+          "retire": "Retirée partout", "studio": "Dans un montage du studio (Reel et carrousel)"}
 _ETATS_POST = {"preparation": "en préparation", "programme": "programmée", "a_valider": "à valider",
                "envoi": "en cours d'envoi", "publie": "publiée", "simule": "simulée (bac à sable)",
                "suspendu": "suspendue", "echec": "échec", "refuse": "texte refusé", "retire": "retirée",
@@ -243,7 +243,8 @@ def _vue_photo(a: dict, posts: list) -> dict:
                               "cle": p["platform"], "etat": _ETATS_POST.get(p["status"], p["status"]),
                               "statut": p["status"], "quand": p["published_at"] or p["scheduled_at"],
                               "lien": p["permalink"], "erreur": p["error"] if p["status"] in ("echec", "refuse", "suspendu") else "",
-                              "texte": p["text"], "apercu": f"/apercu/{p['id']}" if p["rendition_id"] else ""}
+                              "texte": p["text"], "apercu": f"/apercu/{p['id']}" if p["rendition_id"] else "",
+                              "format": p.get("post_format") or "image"}
                              for p in posts]}
 
 
@@ -309,6 +310,10 @@ def apercu(post_id: int, request: Request):
         raise HTTPException(404, "Aperçu indisponible.")
     r = pipeline._un(db.renditions, p["rendition_id"])
     chemin = stockage.chemin(r["path"])
+    # Un Reel : l'aperçu en <img> montre sa couverture ; `?video=1` rend la vidéo.
+    couverture = chemin.with_suffix(".jpg")
+    if chemin.suffix == ".mp4" and couverture.exists() and request.query_params.get("video") != "1":
+        chemin = couverture
     return FileResponse(chemin, headers={"Cache-Control": "private, max-age=3600"})
 
 
@@ -323,6 +328,8 @@ def media(nom: str):
     if not r:
         raise HTTPException(404, "Introuvable.")
     chemin = stockage.chemin(r["path"])
+    if nom.endswith(".jpg") and chemin.suffix == ".mp4" and chemin.with_suffix(".jpg").exists():
+        chemin = chemin.with_suffix(".jpg")         # la couverture d'un Reel (poster, vignette)
     if not chemin.exists():
         raise HTTPException(404, "Introuvable.")
     return FileResponse(chemin, headers={"Cache-Control": "public, max-age=604800"})
@@ -514,6 +521,79 @@ def annuler_campagne(cid: int, request: Request):
     if not ca or not all(securite.peut_voir(u, mid) for mid in ca["brand_ids"] or []):
         raise HTTPException(404, "Campagne inconnue.")
     return _json({"creneaux_annules": campagnes.annuler(cid, _qui(u))})
+
+
+def _campagne_visible(u: dict, cid: int) -> dict:
+    ca = campagnes.campagne(cid)
+    if not ca or not all(securite.peut_voir(u, mid) for mid in ca["brand_ids"] or []):
+        raise HTTPException(404, "Campagne inconnue.")
+    return ca
+
+
+@app.post("/api/campagnes/{cid}/repetition")
+def repeter_campagne(cid: int, request: Request):
+    """La répétition générale : chaque étape rendue (visuel, textes, heure),
+    rien de publié, rien de programmé."""
+    u = _moi(request)
+    _campagne_visible(u, cid)
+    return _json(_vue_repetition(repetition.repeter(cid, _qui(u))))
+
+
+@app.get("/api/campagnes/{cid}/repetition")
+def derniere_repetition(cid: int, request: Request):
+    u = _moi(request)
+    _campagne_visible(u, cid)
+    r = repetition.derniere(cid)
+    return _json(_vue_repetition(r) if r else {"etapes": [], "campagne": campagnes.campagne(cid)})
+
+
+def _vue_repetition(r: dict) -> dict:
+    for e in r["etapes"]:
+        e["visuel"] = {"source": e["visuel"]["source"],
+                       "url": f"/api/repetitions/{r['id']}/{e['slot_id']}.jpg"}
+    return r
+
+
+@app.get("/api/repetitions/{rid}/{nom}")
+def visuel_repetition(rid: int, nom: str, request: Request):
+    u = _moi(request)
+    with db.moteur().connect() as c:
+        r = db.ligne(c.execute(select(db.rehearsals).where(db.rehearsals.c.id == rid)))
+    if not r:
+        raise HTTPException(404, "Introuvable.")
+    _campagne_visible(u, r["campaign_id"])
+    e = next((x for x in r["etapes"] if f"{x['slot_id']}.jpg" == nom), None)
+    if not e:
+        raise HTTPException(404, "Introuvable.")
+    return FileResponse(stockage.chemin(e["visuel"]["chemin"]), headers={"Cache-Control": "private, max-age=86400"})
+
+
+# ── Le studio ────────────────────────────────────────────────────────────
+@app.get("/api/studio")
+def liste_studio(request: Request, marque: str = ""):
+    u = _moi(request)
+    ids = [marque] if marque else securite.marques_de(u)
+    for mid in ids:
+        _voir(u, mid)
+    return _json({"travaux": studio.travaux(ids), "types": ["reel", "carrousel", "avant_apres", "rideau"]})
+
+
+@app.post("/api/studio")
+async def fabriquer_studio(request: Request):
+    """Un montage à la demande : des photos de la marque → Reel, carrousel,
+    avant/après. Le fond studio n'est permis qu'à une marque produit."""
+    u = _moi(request)
+    c_ = await request.json()
+    m = _voir(u, c_.get("marque") or "")
+    photos = [int(x) for x in (c_.get("photos") or [])][:10]
+    for aid in photos:
+        a = _asset_visible(u, aid)
+        if a["brand_id"] != m["id"]:
+            raise HTTPException(400, "Toutes les photos doivent être de la même marque.")
+    if not photos:
+        raise HTTPException(400, "Choisissez au moins une photo.")
+    p = {k: c_[k] for k in ("accroche", "phrases", "titre", "legendes", "cta", "studio") if k in c_}
+    return _json(studio.fabriquer(c_.get("type") or "carrousel", m["id"], photos, p, par=_qui(u)))
 
 
 # ── La relation ──────────────────────────────────────────────────────────
@@ -1110,7 +1190,7 @@ def aujourdhui(request: Request, marque: str = ""):
                     "nom_reseau": reseaux.NOMS.get(p["platform"], p["platform"]), "statut": p["status"],
                     "heure": p["published_at"] or p["scheduled_at"], "texte": p["text"],
                     "vignette": f"/api/photo/{p['asset_id']}/vignette" if p["asset_id"] else "",
-                    "apercu": f"/apercu/{p['id']}", "lien": p["permalink"],
+                    "apercu": f"/apercu/{p['id']}", "lien": p["permalink"], "format": p.get("post_format") or "image",
                     "note": ((p["guard_report"] or {}).get("critique") or {}).get("note"),
                     "juge": ((p["guard_report"] or {}).get("critique") or {}).get("juge"),
                     "simule": bool(p["simulated"])})

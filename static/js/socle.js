@@ -38,6 +38,13 @@ const heure = iso => iso ? new Date(iso).toLocaleTimeString("fr-FR", { ...P, hou
 const euros = (n, d = 2) => (n ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 
 function dire(html) { $("#dialogue-corps").innerHTML = html; $("#dialogue").showModal(); }
+/* L'aperçu exact de ce qui part : l'image, ou la vidéo d'un Reel. */
+function montrerApercu(id, titre, texte, format) {
+  const media = format === "reel" || format === "video"
+    ? `<video controls playsinline preload="metadata" poster="/apercu/${esc(id)}" src="/apercu/${esc(id)}?video=1"></video>`
+    : `<img alt="" src="/apercu/${esc(id)}">`;
+  dire(`<h3>${esc(titre || "")}${format === "carrousel" ? ' <span class="etiquette">carrousel</span>' : ""}</h3>${media}<pre class="texte">${esc(texte || "")}</pre>`);
+}
 function erreur(err) { dire(`<p class="erreur">${esc(err.message || err)}</p>`); }
 const chargement = ou => { ou.innerHTML = '<p class="doux">Un instant…</p>'; };
 const marque = id => ETAT.marques.find(m => m.id === id) || { id, nom: id, couleur: "#555", accent: "#999" };

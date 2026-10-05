@@ -5,6 +5,7 @@ personnes : le PDG (il voit tout) et la responsable SAZÚ (elle ne voit que
 SAZÚ — une autre marque lui répond 404, on ne lui confirme même pas qu'elle
 existe).
 """
+import datetime as dt
 import json
 import re
 import urllib.parse
@@ -85,6 +86,11 @@ egal(lucie.post("/api/depot", data={"marque": "rega"}, files=[("photos", ("x.jpg
 r = lucie.post("/api/depot", data={"marque": "sazu"}, files=[("photos", ("x.jpg", b"pas une image", "image/jpeg"))],
                headers=X)
 verifier(r.status_code == 200 and not r.json()["resultats"][0]["ok"], "un fichier illisible : refusé, dit en clair")
+file.vider(500)
+# SAZÚ est une marque produit : le placement attend dix minutes que la rafale arrive entière.
+ph = lucie.get("/api/photos").json()["photos"]
+verifier(not ph[0]["publications"], "SAZÚ : dix minutes d'attente, le temps qu'une rafale arrive entière")
+db.figer_horloge(db.maintenant() + dt.timedelta(minutes=12))
 file.vider(500)
 ph = lucie.get("/api/photos").json()["photos"]
 egal(ph[0]["id"], res["id"], "« Mes photos » : la dernière déposée en tête")

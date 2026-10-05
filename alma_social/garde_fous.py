@@ -236,10 +236,20 @@ def verifier_media(rendu: dict, contrainte: dict | None) -> list:
     if formats and ext not in formats and not (ext == "jpeg" and "jpg" in formats):
         v.append(f"format {ext} non accepté (acceptés : {', '.join(formats)})")
     r = rendu["largeur"] / rendu["hauteur"]
-    if contrainte.get("ratio_min") and r < contrainte["ratio_min"] - 0.01:
+    # Les bornes de ratio des fiches sont celles des IMAGES du fil : un Reel
+    # 9:16 sur Instagram est la norme, pas une faute. La vidéo n'est bornée
+    # que là où la fiche le dit pour elle (YouTube Shorts : vertical).
+    if not rendu.get("video"):
+        bornes = ("ratio_min", "ratio_max")
+    else:
+        bornes = ("ratio_max",) if (contrainte.get("ratio_max") or 9) <= 1 else ()
+    if "ratio_min" in bornes and contrainte.get("ratio_min") and r < contrainte["ratio_min"] - 0.01:
         v.append(f"ratio {r:.2f} sous le minimum {contrainte['ratio_min']}")
-    if contrainte.get("ratio_max") and r > contrainte["ratio_max"] + 0.01:
+    if "ratio_max" in bornes and contrainte.get("ratio_max") and r > contrainte["ratio_max"] + 0.01:
         v.append(f"ratio {r:.2f} au-dessus du maximum {contrainte['ratio_max']}")
+    vues = rendu.get("vues") or 1
+    if vues > 1 and contrainte.get("carousel_max") and vues > contrainte["carousel_max"]:
+        v.append(f"carrousel de {vues} vues, maximum {contrainte['carousel_max']}")
     lim = contrainte.get("video_max_mb") if rendu.get("video") else contrainte.get("max_weight_mb")
     if lim and rendu["poids_mo"] > lim:
         v.append(f"fichier de {rendu['poids_mo']:.1f} Mo, maximum {lim} Mo")

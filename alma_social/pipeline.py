@@ -30,6 +30,7 @@ from sqlalchemy.exc import IntegrityError
 
 from . import (acces, alertes, creneaux, db, file, garde_fous, ia, images, journal, mesure,
                nettoyage, redaction, reseaux, stockage, video, vision)
+from . import marque as marque_
 from . import publieurs
 from .publieurs.bac_a_sable import BacASable
 from .publieurs.base import NonBranche, PanneTransitoire, PostPrepare, RefusReseau
@@ -42,6 +43,7 @@ REFUS_AVANT_PAUSE = 3                   # « trois refus consécutifs : le rése
 FENETRE_DOUBLON = dt.timedelta(days=90)
 SEUIL_DOUBLON = 8                       # bits de pHash : même photo recadrée ou réexportée
 SEUIL_RAFALE = 5                        # deux photos d'une même rafale
+ATTENTE_RAFALE = dt.timedelta(minutes=10)   # marque produit : le temps que la rafale arrive entière
 
 
 # ── Petits accès ─────────────────────────────────────────────────────────
@@ -168,7 +170,26 @@ def analyser(p: dict):
     journal.noter("systeme", "lecture", "asset", a["id"], m["id"],
                   apres={"sujet": lecture.get("sujet"), "pilier": pilier, "note": lecture.get("utilisabilite"),
                          "modele": modele, "simule": lecture.get("simule", False)})
-    file.ajouter("placer", {"asset_id": a["id"]}, dedup=f"placer:{a['id']}")
+    quand = None
+    if marque_.mise_en_scene(m) == "studio_permis" and a["kind"] == "photo":
+        # Une marque produit : on laisse dix minutes à la rafale pour arriver
+        # entière, le studio en fait un Reel et un carrousel, puis on place.
+        file.ajouter("studio_rafale", {"brand_id": m["id"]}, quand=db.maintenant() + ATTENTE_RAFALE,
+                     dedup=f"rafale:{a['id']}")
+        quand = db.maintenant() + ATTENTE_RAFALE + dt.timedelta(minutes=1)
+    file.ajouter("placer", {"asset_id": a["id"]}, quand=quand, dedup=f"placer:{a['id']}")
+
+
+@file.traitant("studio_rafale")
+def studio_rafale(p: dict):
+    from . import studio
+    try:
+        studio.rafale(p["brand_id"])
+    except studio.RegleHonnetete:
+        return
+    except Exception as e:
+        log.exception("montage automatique")
+        raise file.Reessayer(f"studio : {e}")
 
 
 def _rafale(a: dict):
@@ -178,7 +199,7 @@ def _rafale(a: dict):
         autres = db.lignes(c.execute(select(db.assets.c.id, db.assets.c.phash).where(
             db.assets.c.brand_id == a["brand_id"], db.assets.c.id != a["id"],
             db.assets.c.kind == "photo", db.assets.c.created_at >= depuis,
-            db.assets.c.status.in_(("banque", "programme", "publie")))))
+            db.assets.c.status.in_(("banque", "programme", "publie", "studio")))))
     for o in autres:
         if images.distance(a["phash"], o["phash"]) <= SEUIL_RAFALE:
             return o["id"]
@@ -365,6 +386,14 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
         # Ce que le terrain a dit en déposant : le texte peut s'en servir, ses
         # chiffres deviennent citables (c'est un fait rapporté par l'équipe).
         contexte["dit par l'équipe au dépôt"] = a["note"]
+    montages = {}
+    if marque_.mise_en_scene(m) == "studio_permis":
+        from . import studio
+        montages = studio.montages_de(a["id"])
+        if montages:
+            contexte["format"] = ("selon le réseau : " + " ; ".join(
+                f"{reseaux.NOMS.get(pf, pf)} → {montages[t]['type']} de {len(montages[t]['asset_ids'])} photos"
+                for pf, t in studio.MONTAGE_PAR_RESEAU.items() if pf in retenus and t in montages))
     lecture = a["vision"] or {}
     textes = redaction.ecrire(m, lecture, retenus, cts, pilier, contexte, _anciens_textes(a["id"]), jour,
                               slot_id=s["id"])
@@ -399,8 +428,17 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
         avec_logo = acces.logo_permis(m, heure)
         fmt = format_pour(pf, cts)
         est_video = pf in reseaux.VIDEO_SEULEMENT
+        montage = montages.get(studio.MONTAGE_PAR_RESEAU.get(pf, "")) if montages else None
+        if montage and not avec_logo and montage["sortie"].get("params", {}).get("avec_logo", True):
+            montage = None          # le logo n'est pas encore permis à cette heure-là : la photo seule
+        extras, forme = [], ("video" if est_video else "image")
         try:
-            rendu = declinaison(a, m, "9:16" if est_video else fmt, en_video=est_video, avec_logo=avec_logo)
+            if montage:
+                rs = [_un(db.renditions, f["rendition_id"]) for f in montage["fichiers"]]
+                rendu = {**_info_rendu(rs[0]), "vues": len(rs)}
+                extras, forme = [r["id"] for r in rs[1:]], montage["type"]
+            else:
+                rendu = declinaison(a, m, "9:16" if est_video else fmt, en_video=est_video, avec_logo=avec_logo)
         except Exception as e:
             log.exception("déclinaison %s/%s", a["id"], pf)
             raise file.Reessayer(f"retouche : {e}")
@@ -412,6 +450,7 @@ def preparer_creneau(s: dict, par: str = "systeme") -> dict:
             continue
         pid = _inserer(base, status="preparation", text=t["texte"], title=t.get("titre", ""),
                        rendition_id=rendu["id"], scheduled_at=creneaux.utc(heure), model=t["modele"],
+                       post_format=forme, media_job_id=(montage or {}).get("id"), extra_renditions=extras,
                        prompt_version=t["prompt_version"],
                        guard_report={"violations": [], "essais": t["essais"], "traitements": rendu["traitements"],
                                      "critique": t.get("critique")})
@@ -559,7 +598,7 @@ def _info_rendu(r: dict) -> dict:
     chemin = stockage.chemin(r["path"])
     est_video = r["format"].endswith("v")
     if est_video:
-        largeur, hauteur, duree = 1080, 1920, float(video.DUREE_S)
+        largeur, hauteur, duree = 1080, 1920, float(r.get("duration_s") or video.DUREE_S)
     else:
         from PIL import Image
         with Image.open(chemin) as im:
@@ -613,7 +652,9 @@ def publier(pl: dict):
                        title=p["title"] or "", media_url=f"{_url_publique()}/m/{url_media(r)}",
                        media_path=info["chemin"], is_video=info["video"],
                        link_url=mesure.url_courte(lien["code"]) if lien else "",
-                       options={"cta": "ORDER" if m["sector"] == "food" else "LEARN_MORE"})
+                       options={"cta": "ORDER" if m["sector"] == "food" else "LEARN_MORE"},
+                       extra_paths=[_info_rendu(_un(db.renditions, x))["chemin"]
+                                    for x in (p.get("extra_renditions") or [])])
     try:
         pub = BacASable(p["platform"], acces.contraintes_publieur(c, p["platform"])) if bac \
             else _publieur(p, cpt)

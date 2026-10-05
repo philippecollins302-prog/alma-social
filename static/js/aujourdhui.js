@@ -17,13 +17,13 @@ async function vueAujourdhui() {
     const groupes = { auj: [], dem: [] };
     j.publications.forEach(p => groupes[jour(p.heure) === auj ? "auj" : "dem"].push(p));
     $("#auj-compte").textContent = `${j.publications.length} publication${j.publications.length > 1 ? "s" : ""}`;
-    liste.dataset.photos = JSON.stringify(j.publications.map(p => [p.id, p.nom_reseau, p.texte]));
+    liste.dataset.photos = JSON.stringify(j.publications.map(p => [p.id, p.nom_reseau, p.texte, p.format]));
     const carte = p => `
       <article class="sortie">
         ${p.vignette ? `<img alt="" loading="lazy" src="${esc(p.vignette)}">` : '<img alt="">'}
         <div>
           <div class="ligne"><span class="heure">${esc(heure(p.heure))}</span>${noteCritique(p.note, p.juge)}</div>
-          <div class="petit">${puce(p.marque)}<b>${esc(nomMarque(p.marque))}</b> · ${esc(p.nom_reseau)}
+          <div class="petit">${puce(p.marque)}<b>${esc(nomMarque(p.marque))}</b> · ${esc(p.nom_reseau)}${p.format === "reel" ? ' <span class="etiquette or">Reel</span>' : p.format === "carrousel" ? ' <span class="etiquette or">carrousel</span>' : ""}
             <span class="etat-${esc(p.statut)}">· ${esc({ programme: "programmée", publie: "publiée", simule: "simulée", a_valider: "aperçu copilote", echec: "échec", suspendu: "suspendue", envoi: "envoi…", preparation: "préparation", refuse: "écartée" }[p.statut] || p.statut)}</span></div>
           <div class="texte">${esc(p.texte)}</div>
           <div class="actions">
@@ -44,7 +44,7 @@ $("#v-aujourdhui").addEventListener("click", async e => {
   if (t.dataset.apercu) {
     e.preventDefault();
     const infos = JSON.parse($("#auj-liste").dataset.photos || "[]").find(x => String(x[0]) === t.dataset.apercu) || [];
-    return dire(`<h3>${esc(infos[1] || "")}</h3><img alt="" src="/apercu/${esc(t.dataset.apercu)}"><pre class="texte">${esc(infos[2] || "")}</pre>`);
+    return montrerApercu(t.dataset.apercu, infos[1], infos[2], infos[3]);
   }
   if (t.dataset.valider) {
     try { await api(`/api/valider/${t.dataset.valider}`, { json: {} }); vueAujourdhui(); } catch (err) { erreur(err); }

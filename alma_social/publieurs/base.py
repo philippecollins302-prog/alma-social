@@ -69,6 +69,7 @@ class PostPrepare:
     link_url: str = ""             # lien tracé (bouton GBP, destination Pinterest)
     profile: str = ""              # profil chez l'agrégateur (déchiffré au dernier moment)
     options: dict = dataclasses.field(default_factory=dict)
+    extra_paths: list = dataclasses.field(default_factory=list)   # carrousel : les vues 2…n, dans l'ordre
 
 
 @dataclasses.dataclass

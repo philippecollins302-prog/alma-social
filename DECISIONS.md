@@ -100,3 +100,18 @@ plus simple à maintenir ».
 - La base de production reçoit les colonnes nouvelles par une migration douce (ajout seulement, jamais de retrait).
 - Interface : nuit d'encre par défaut, or du groupe en accent, Archivo Black + DM Sans servies localement, 9 écrans (5 onglets + « Plus »).
 - « lien en bio » n'est plus pris pour le mot interdit « bio » de SAZÚ (faux positif qui refusait toute légende Instagram).
+
+## v3 — le studio et la répétition générale (jalon 2, 05/10/2026)
+
+- Le studio (`alma_social/studio.py`) fabrique en local, sans service extérieur : retouche culinaire (lumière de fenêtre plutôt que néon, chaleur, éclat sans saturation criarde), Reel 9:16 à partir de photos, carrousel 4:5, avant/après en image et en rideau vidéo. Gratuit, instantané, aucune photo ne sort de la maison pour être montée.
+- Le fond studio est refusé PAR LE CODE à toute marque qui montre des réalisations (`RegleHonnetete`) : un chantier montré est ce chantier-là. Pour SAZÚ, le plat est détouré et posé sur le fond de la marque, ses pixels ne sont jamais repeints — et le traitement le déclare.
+- Reel : l'accroche est lisible dès la première image (on décide en une seconde de rester), sous-titres mot à mot dans une pastille lisible au soleil, barre de progression, fin de deux secondes sur l'appel à l'action. Aucune musique incrustée : le réseau ajoute un titre de SA bibliothèque commerciale ; on n'embarque jamais un titre protégé.
+- L'accent de la marque n'est employé sur fond sombre que s'il s'y lit (la framboise de SAZÚ sur l'olive ne se lit pas) ; sinon un beurre chaud.
+- Une rafale (3 photos SAZÚ en trois heures) devient seule un Reel ET un carrousel. La marque produit attend dix minutes avant de placer une photo, le temps que la rafale arrive entière. La 1re photo porte les montages au calendrier ; les autres passent « studio » et ne repartent pas seules la même semaine.
+- Quel montage pour quel réseau : Reel sur Instagram, TikTok, YouTube (la vidéo courte y porte) ; carrousel sur Facebook et LinkedIn (on y lit). Upload-Post reçoit plusieurs `photos[]` dans l'ordre pour un carrousel, `video` + `media_type=REELS` pour un Reel.
+- Le logo du montage suit la règle de l'heure : fabriqué avant le 13/11 18 h, un montage SAZÚ est SANS logo ; une publication après la révélation peut le porter.
+- Les bornes de ratio des fiches réseau valent pour les IMAGES du fil ; une vidéo n'est bornée que là où la fiche est verticale (YouTube Shorts). Un Reel 9:16 sur Instagram n'est pas une faute.
+- La vraie durée d'une vidéo du studio est gardée (`renditions.duration_s`) : le garde-fou des durées juge la vidéo réelle, pas une valeur par défaut.
+- La répétition générale (`alma_social/repetition.py`) rejoue une campagne comme l'horloge le fera — mêmes textes, garde-fous, Critique, logo à l'heure de l'étape — sans écrire un post, sans toucher un créneau, sans ranger une carte en banque. Ses visuels ne se servent qu'à qui voit la marque.
+- La première répétition de l'ouverture SAZÚ a trouvé trois défauts du texte de secours (sans clé IA) qui seraient partis le 30/10 : « Nouvelle publication » sur TikTok et Google, la fiche interne (« dark kitchen… ») recopiée dans Facebook, et un TikTok identique à l'Instagram le Jour J. Corrigés : la tête courte vient de l'accroche de l'étape, Facebook parle avec la PROMESSE de la plateforme de marque, chaque réseau garde sa construction.
+- Le texte de secours n'utilise une accroche de la plateforme que pour une marque produit : « Ce mur porte désormais trois étages » serait une affirmation sur CE chantier, que rien ne vérifie. Et jamais une accroche chiffrée (« Jour 1 → livraison » était refusée par le garde-fou des chiffres).

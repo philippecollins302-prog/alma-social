@@ -208,3 +208,32 @@ dialog.tiroir { margin-bottom: 0; border-radius: 26px 26px 0 0; width: 100vw; ma
 pre.texte { white-space: pre-wrap; font: inherit; background: var(--carte2); padding: 12px; border-radius: 12px; }
 table.equipe td:last-child { white-space: nowrap; font-size: 12px; }
 .marque small:empty { display: none; }
+
+/* ── Studio : montages et répétition générale ── */
+.montage video, .montage .bande { margin: 10px 0 6px; }
+.montage video { width: 100%; max-height: 70dvh; border-radius: var(--rayon-s); background: #000; aspect-ratio: 9 / 16; object-fit: contain; }
+.bande { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
+.bande img { flex: 0 0 78%; width: 78%; min-width: 0; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--rayon-s); scroll-snap-align: start; }
+.bilan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 6px; }
+.bilan div { background: var(--carte2); border-radius: var(--rayon-s); padding: 10px; text-align: center; }
+.bilan b { display: block; font: 24px var(--titre); }
+.bilan span { font-size: 12px; color: var(--doux); }
+.etape { display: grid; grid-template-columns: 104px 1fr; gap: 12px; padding: 14px 0; border-top: 1px solid var(--trait); }
+.etape > img { width: 104px; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--rayon-s); background: var(--trait); }
+.etape .heure { font: 14px var(--titre); }
+.etape.a-revoir > img { outline: 3px solid var(--attention); }
+.etape .texte { font-size: 13px; white-space: pre-wrap; margin: 6px 0 0; font-family: var(--texte);
+  display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+.etape .texte.ouvert { -webkit-line-clamp: unset; }
+.etiquette.attention { background: color-mix(in srgb, var(--attention) 22%, transparent); color: var(--attention); }
+.onglets-texte { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.onglets-texte button { border: 1px solid var(--trait); background: none; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+.onglets-texte button.actif { background: var(--encre); color: var(--fond); border-color: var(--encre); }
+.choix-photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0; }
+.choix-photos label { position: relative; }
+.choix-photos input { position: absolute; opacity: 0; }
+.choix-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 3px solid transparent; }
+.choix-photos input:checked + img { border-color: var(--or); }
+.choix-photos i { position: absolute; top: 4px; left: 6px; font: 16px var(--titre); color: var(--or); font-style: normal;
+  text-shadow: 0 1px 3px #000; }
+#dialogue video { width: 100%; border-radius: var(--rayon-s); background: #000; }
